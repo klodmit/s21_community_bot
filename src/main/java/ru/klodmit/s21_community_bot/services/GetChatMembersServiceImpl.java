@@ -9,7 +9,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.List;
 
-public class GetChatMembersServiceImpl implements getChatMembersService {
+public class GetChatMembersServiceImpl implements GetChatMembersService {
     private final TelegramLongPollingBot bot;
     public GetChatMembersServiceImpl(TelegramLongPollingBot bot) {
         this.bot = bot;
@@ -26,5 +26,17 @@ public class GetChatMembersServiceImpl implements getChatMembersService {
     public ChatMember getChatMember(Long chatId, Long userId) {
         GetChatMember getChatMember = new GetChatMember(chatId.toString(), userId);
         return  bot.execute(getChatMember);
+    }
+    @SneakyThrows
+    @Override
+    @Deprecated
+    public Long getUserIdByUsername(Long chatId, String username) {
+        List<ChatMember> members = bot.execute(new GetChatAdministrators(chatId.toString()));
+        for (ChatMember member : members) {
+            if (member.getUser().getUserName().equalsIgnoreCase(username)) {
+                return member.getUser().getId();
+            }
+        }
+        return null;
     }
 }

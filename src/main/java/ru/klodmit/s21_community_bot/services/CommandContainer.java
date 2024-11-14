@@ -14,17 +14,18 @@ public class CommandContainer {
     private final ImmutableMap<String, Command> commandMap;
 
     public CommandContainer(SendMessageToThreadService sendMessageToThreadService, TelegramLongPollingBot bot) {
-        getChatMembersService getChatAdministratorsService = new GetChatMembersServiceImpl(bot);
+        GetChatMembersService getChatMembersService = new GetChatMembersServiceImpl(bot);
         commandMap = ImmutableMap.<String, Command>builder()
                 .put(FAQ.getCommandName(), new FaqCommand(sendMessageToThreadService))
                 .put(RULES.getCommandName(), new RulesCommand(sendMessageToThreadService))
                 .put(BANAN.getCommandName(), new BananCommand(sendMessageToThreadService))
+                .put(BAN.getCommandName(), new BanCommand(sendMessageToThreadService,getChatMembersService,bot))
 //                .put(FIND.getCommandName(), new FindCommand())
-                .put(ADMIN.getCommandName(), new AdminCommand(sendMessageToThreadService, getChatAdministratorsService))
-//                .put(MUTE.getCommandName(), new MuteCommand())
-//                .put(SAVE.getCommandName(), new SaveCommand())
-//                .put(VALIDATE.getCommandName(), new ValidateCommand())
-//                .put(WARN.getCommandName(), new WarnCommand())
+                .put(ADMIN.getCommandName(), new AdminCommand(sendMessageToThreadService, getChatMembersService))
+                .put(MUTE.getCommandName(), new MuteCommand(sendMessageToThreadService,getChatMembersService,bot))
+                .put(SAVE.getCommandName(), new SaveCommand(sendMessageToThreadService,getChatMembersService,bot))
+                .put(VALIDATE.getCommandName(), new ValidateCommand(sendMessageToThreadService,getChatMembersService,bot))
+                .put(WARN.getCommandName(), new WarnCommand(sendMessageToThreadService,getChatMembersService))
                 .build();
 
     }

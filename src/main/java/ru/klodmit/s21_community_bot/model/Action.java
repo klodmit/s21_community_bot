@@ -1,0 +1,30 @@
+package ru.klodmit.s21_community_bot.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+@Getter
+@Setter
+@Entity
+@Table(name = "action")
+public class Action {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "action_id_gen")
+    @SequenceGenerator(name = "action_id_gen", sequenceName = "action_id_seq", allocationSize = 1)
+    @Column(name = "id", nullable = false)
+    private Integer id;
+
+    @Column(name = "title")
+    private String title;
+
+    @Column(name = "description", length = Integer.MAX_VALUE)
+    private String description;
+
+    @OneToMany(mappedBy = "action")
+    private Set<ActivityLog> activityLogs = new LinkedHashSet<>();
+
+}

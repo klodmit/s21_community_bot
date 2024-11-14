@@ -1,5 +1,6 @@
 package ru.klodmit.s21_community_bot.services;
 
+import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
@@ -13,8 +14,9 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
     public SendMessageToThreadServiceImpl(BotMain botMain) {
         this.botMain = botMain;
     }
+    @SneakyThrows
     @Override
-    public void sendMessage(String chatId, Integer threadId, String message) throws TelegramApiException {
+    public void sendMessage(String chatId, Integer threadId, String message) {
         String text = escapeMarkdownV2(message);
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)

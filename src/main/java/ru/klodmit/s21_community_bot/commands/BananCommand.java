@@ -6,7 +6,7 @@ import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 
 public class BananCommand implements Command{
     private final SendMessageToThreadService sendMessageToThreadService;
-    public final static String BANAN_MESSAGE = "Тут мог быть бан\nДержи банан 🍌";
+    private final static String BANAN_MESSAGE = "Тут мог быть бан\nДержи банан 🍌";
 
     public BananCommand(SendMessageToThreadService sendMessageToThreadService) {
         this.sendMessageToThreadService = sendMessageToThreadService;
