@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
@@ -17,8 +18,12 @@ import ru.klodmit.s21_community_bot.dto.VerificationInfo;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
 import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
+import ru.klodmit.s21_community_bot.services.VerificationByRocketChat;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
@@ -51,6 +56,8 @@ public class BotMain extends TelegramLongPollingBot {
         System.out.println("Bot initialized and running.");
     }
 
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+
     @SneakyThrows
     @Override
     public void onUpdateReceived(@NotNull Update update) {
@@ -61,16 +68,19 @@ public class BotMain extends TelegramLongPollingBot {
                 Long userId = newUser.getId();
                 String userFirstName = newUser.getFirstName();
                 String mentionText = mentionUser(userFirstName, userId);
-                String text = "Добро пожаловать, " + mentionText + "\nУ тебя есть 5 минут для того, чтобы указать свой ник в топике [ID](https://t.me/c/1975595161/30147)";
+                String text = "Добро пожаловать, " + mentionText + "\nУ тебя есть 5 минут для того, чтобы указать свой школьный ник в топике [ID](https://t.me/c/1975595161/30147)";
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setChatId(chatId);
                 sendMessage.setText(text);
                 sendMessage.setParseMode("MarkdownV2");
-                try {
-                    execute(sendMessage);
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        Integer sentMessageId = execute(sendMessage).getMessageId();
+                        scheduleMessageDeletion(chatId, sentMessageId);
+                    } catch (TelegramApiException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
             });
         }
 
@@ -105,6 +115,20 @@ public class BotMain extends TelegramLongPollingBot {
 //            handleUserReply(update);
 
         }
+    }
+
+    private void scheduleMessageDeletion(Long chatId, Integer messageId) {
+        scheduler.schedule(() -> {
+            // Удаляем сообщение асинхронно
+            CompletableFuture.runAsync(() -> {
+                DeleteMessage deleteMessage = new DeleteMessage(chatId.toString(), messageId);
+                try {
+                    execute(deleteMessage);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }, 5, TimeUnit.MINUTES);
     }
 
 //    public void handleUserReply(Update update) {

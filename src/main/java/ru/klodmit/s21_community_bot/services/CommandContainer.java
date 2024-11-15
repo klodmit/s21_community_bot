@@ -13,8 +13,10 @@ import static ru.klodmit.s21_community_bot.commands.CommandName.*;
 public class CommandContainer {
     private final ImmutableMap<String, Command> commandMap;
 
+
     public CommandContainer(SendMessageToThreadService sendMessageToThreadService, TelegramLongPollingBot bot) {
         GetChatMembersService getChatMembersService = new GetChatMembersServiceImpl(bot);
+
         commandMap = ImmutableMap.<String, Command>builder()
                 .put(FAQ.getCommandName(), new FaqCommand(sendMessageToThreadService))
                 .put(RULES.getCommandName(), new RulesCommand(sendMessageToThreadService))
@@ -24,7 +26,7 @@ public class CommandContainer {
                 .put(ADMIN.getCommandName(), new AdminCommand(sendMessageToThreadService, getChatMembersService))
                 .put(MUTE.getCommandName(), new MuteCommand(sendMessageToThreadService,getChatMembersService,bot))
                 .put(SAVE.getCommandName(), new SaveCommand(sendMessageToThreadService,getChatMembersService,bot))
-                .put(VALIDATE.getCommandName(), new ValidateCommand(sendMessageToThreadService,getChatMembersService,bot))
+//                .put(VALIDATE.getCommandName(), new ValidateCommand(sendMessageToThreadService,getChatMembersService,bot,verificationByRocketChat))
                 .put(WARN.getCommandName(), new WarnCommand(sendMessageToThreadService,getChatMembersService))
                 .build();
 
