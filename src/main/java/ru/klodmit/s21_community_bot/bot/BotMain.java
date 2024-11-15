@@ -7,16 +7,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
+import ru.klodmit.s21_community_bot.commands.ValidateCommand;
+import ru.klodmit.s21_community_bot.dto.VerificationInfo;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
 import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Thread.sleep;
@@ -52,22 +54,24 @@ public class BotMain extends TelegramLongPollingBot {
     @SneakyThrows
     @Override
     public void onUpdateReceived(@NotNull Update update) {
-        //TODO: Refactor this shit
         if (update.getMessage() != null && update.getMessage().getNewChatMembers() != null) {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
-            for (User newUser : update.getMessage().getNewChatMembers()) {
+            update.getMessage().getNewChatMembers().forEach(newUser -> {
                 Long userId = newUser.getId();
                 String userFirstName = newUser.getFirstName();
-                Integer threadId = message.getMessageThreadId();
                 String mentionText = mentionUser(userFirstName, userId);
                 String text = "Добро пожаловать, " + mentionText + "\nУ тебя есть 5 минут для того, чтобы указать свой ник в топике [ID](https://t.me/c/1975595161/30147)";
                 SendMessage sendMessage = new SendMessage();
                 sendMessage.setChatId(chatId);
                 sendMessage.setText(text);
                 sendMessage.setParseMode("MarkdownV2");
-                execute(sendMessage);
-            }
+                try {
+                    execute(sendMessage);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
 
 
@@ -98,9 +102,47 @@ public class BotMain extends TelegramLongPollingBot {
                     command.execute(update, arguments); // Передаем аргументы или null
                 }
             }
+//            handleUserReply(update);
 
         }
     }
+
+//    public void handleUserReply(Update update) {
+//        if (update.hasMessage() && update.getMessage().getReplyToMessage() != null) {
+//            Long userId = update.getMessage().getFrom().getId();
+//            String userMessage = update.getMessage().getText();
+//            Integer replyMessageId = update.getMessage().getReplyToMessage().getMessageId();
+//
+//            // Проверяем, что это ответ на наше сообщение с кодом
+//            VerificationInfo verificationInfo;
+//            if (verificationInfo != null && verificationInfo.getMessageId().equals(replyMessageId)) {
+//                // Сравниваем код
+//                if (userMessage.equals(verificationInfo.getVerificationCode())) {
+//                    // Успешная верификация
+//                    try {
+//                        System.out.println("g");
+//                        Integer sentId = sendMessageToThreadServiceImpl.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), "Успешная верификация\\!");
+//                        userService.saveUser(userId, verificationInfo.getSchoolLogin(), true);
+//                        deleteMessage(update.getMessage().getChatId(), replyMessageId);
+//                        deleteMessage(update.getMessage().getChatId(), update.getMessage().getMessageId());
+//                        deleteMessage(update.getMessage().getChatId(), sentId);
+//
+//                    } catch (TelegramApiException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                } else {
+//                    // Неверный код
+//                    try {
+//                        System.out.println("b");
+//                        sendMessage(update.getMessage().getChatId(), update.getMessage().getMessageThreadId(), "Неверный код\\. Попробуй еще раз\\.");
+//                    } catch (TelegramApiException e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                }
+//            }
+//        }
+//    }
+
 
     @Override
     public String getBotUsername() {

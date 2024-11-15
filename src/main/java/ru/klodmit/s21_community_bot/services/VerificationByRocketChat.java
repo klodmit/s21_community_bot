@@ -2,8 +2,8 @@ package ru.klodmit.s21_community_bot.services;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import ru.klodmit.s21_community_bot.dto.AuthDto;
-import ru.klodmit.s21_community_bot.dto.SendMessageDto;
+import ru.klodmit.s21_community_bot.dto.AuthByRocketChatDto;
+import ru.klodmit.s21_community_bot.dto.SendMessageByRocketChat;
 import ru.klodmit.s21_community_bot.dto.UserDto;
 
 import java.util.Random;
@@ -14,28 +14,25 @@ public class VerificationByRocketChat {
     private String username;
     @Value("${school.password}")
     private String password;
-    private SendMessage sendMessage;
-    private AuthRequest authRequest;
+    private SendMessageByRocketChatService sendMessageByRocketChatService;
+    private AuthRequestByRocketChatService authRequestByRocketChatService;
 
-    public VerificationByRocketChat(SendMessage sendMessage, AuthRequest authRequest) {
-        this.sendMessage = sendMessage;
-        this.authRequest = authRequest;
+    public VerificationByRocketChat(SendMessageByRocketChatService sendMessageByRocketChatService, AuthRequestByRocketChatService authRequestByRocketChatService) {
+        this.sendMessageByRocketChatService = sendMessageByRocketChatService;
+        this.authRequestByRocketChatService = authRequestByRocketChatService;
     }
 
     public String getAuth(String nickName) {
-        UserDto userDto = UserDto.builder().username(username).password(password).build();
+        UserDto userDto = new UserDto(username,password);
         System.out.println(userDto);
-        AuthDto authDto = authRequest.getAccess(userDto);
-        System.out.println(authDto);
+        AuthByRocketChatDto authByRocketChatDto = authRequestByRocketChatService.getAccess(userDto);
+        System.out.println(authByRocketChatDto);
         String generatedString = generateCode();
-        SendMessageDto sendMessageDto = SendMessageDto.builder()
-                .channel("@" + nickName)
-                .text(generatedString)
-                .build();
-        System.out.println(sendMessageDto);
-        sendMessage.sendMessage(sendMessageDto,
-                authDto.getData().getUserId(),
-                authDto.getData().getAuthToken());
+        SendMessageByRocketChat sendMessageByRocketChat = new SendMessageByRocketChat("@" + nickName,generatedString);
+        System.out.println(sendMessageByRocketChat);
+        sendMessageByRocketChatService.sendMessage(sendMessageByRocketChat,
+                authByRocketChatDto.data().userId(),
+                authByRocketChatDto.data().authToken());
         return generatedString;
     }
 
@@ -45,7 +42,7 @@ public class VerificationByRocketChat {
 
         StringBuilder code = new StringBuilder(targetStringLength);
         for (int i = 0; i < targetStringLength; i++) {
-            int digit = random.nextInt(10);  // Генерация случайной цифры от 0 до 9
+            int digit = random.nextInt(10);
             code.append(digit);
         }
 

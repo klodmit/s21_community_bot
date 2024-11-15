@@ -11,7 +11,9 @@ public enum CommandName {
     MUTE("/mute"),
     WARN("/warn"),
     VALIDATE("/validate"),
-    BANAN("/banan");
+    BANAN("/banan"),
+    CHECKCHAT("/checkchat"),
+    BANUSERS("/banusers");
 
 
     private final String commandName;

@@ -10,6 +10,6 @@ public interface SendMessageToThreadService {
      * @param chatId  provided chatId in which messages would be sent.
      * @param message provided message to be sent.
      */
-    void sendMessage(String chatId,Integer ThreadId, String message) throws TelegramApiException;
+    Integer sendMessage(String chatId,Integer ThreadId, String message) throws TelegramApiException;
 
 }

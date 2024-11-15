@@ -3,6 +3,7 @@ package ru.klodmit.s21_community_bot.services;
 import lombok.SneakyThrows;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.bot.BotMain;
 
@@ -16,7 +17,7 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
     }
     @SneakyThrows
     @Override
-    public void sendMessage(String chatId, Integer threadId, String message) {
+    public Integer sendMessage(String chatId, Integer threadId, String message) {
         String text = escapeMarkdownV2(message);
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
@@ -25,6 +26,8 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
                 .parseMode("MarkdownV2")
                 .build();
         botMain.execute(sendMessage);
+        Message sentMessage = botMain.execute(sendMessage);
+        return sentMessage.getMessageId();
     }
 
     private String escapeMarkdownV2(String text) {
