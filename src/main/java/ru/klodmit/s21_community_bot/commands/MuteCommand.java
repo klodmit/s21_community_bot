@@ -52,7 +52,7 @@ public class MuteCommand implements Command{
         } else {
             int defaultDuration = 1440;
             muteUser(chatId.toString(), userId, defaultDuration);
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец\\.");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.");
         }
     }
 
