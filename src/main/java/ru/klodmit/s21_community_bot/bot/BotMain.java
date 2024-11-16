@@ -3,30 +3,23 @@ package ru.klodmit.s21_community_bot.bot;
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
-import ru.klodmit.s21_community_bot.commands.ValidateCommand;
-import ru.klodmit.s21_community_bot.dto.VerificationInfo;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
 import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
-import ru.klodmit.s21_community_bot.services.VerificationByRocketChat;
-
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static java.lang.Thread.sleep;
 
 @Component
 public class BotMain extends TelegramLongPollingBot {
@@ -34,12 +27,6 @@ public class BotMain extends TelegramLongPollingBot {
     private final SendMessageToThreadServiceImpl sendMessageToThreadServiceImpl;
     private final CheckSchoolAccount checkSchoolAccount;
 
-
-    @Value("${bot.username}")
-    private String username;
-
-    @Value("${bot.token}")
-    private String token;
 
     private final CommandContainer commandContainer;
 
@@ -65,6 +52,12 @@ public class BotMain extends TelegramLongPollingBot {
             Message message = update.getMessage();
             Long chatId = message.getChatId();
             update.getMessage().getNewChatMembers().forEach(newUser -> {
+                DeleteMessage deleteMessage = new DeleteMessage(chatId.toString(), message.getMessageId());
+                try {
+                    execute(deleteMessage);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
                 Long userId = newUser.getId();
                 String userFirstName = newUser.getFirstName();
                 String mentionText = mentionUser(userFirstName, userId);
@@ -175,20 +168,19 @@ public class BotMain extends TelegramLongPollingBot {
 
     private String mentionUser(String userFirstName, Long userId) {
         String escapedFirstName = escapeMarkdownV2(userFirstName);
-        String mentionText = "[" + escapedFirstName + "](tg://user?id=" + userId.toString() + ")";
-        return mentionText;
+        return "[" + escapedFirstName + "](tg://user?id=" + userId.toString() + ")";
     }
 
     private String escapeMarkdownV2(String text) {
-        if (text == null) {
-            return "";
+        String result = "";
+        if (text != null) {// Список символов, которые нужно экранировать
+            String[] specialChars = {"\\", ".", "_", "*", "[", "]", "(", ")", "~", ">", "#", "+", "-", "=", "|", "{", "}", "!"};
+            for (String specialChar : specialChars) {
+                text = text.replace(specialChar, "\\" + specialChar);
+            }
+            result = text;
         }
-        // Список символов, которые нужно экранировать
-        String[] specialChars = {"\\", ".", "_", "*", "[", "]", "(", ")", "~", ">", "#", "+", "-", "=", "|", "{", "}", "!"};
-        for (String specialChar : specialChars) {
-            text = text.replace(specialChar, "\\" + specialChar);
-        }
-        return text;
+        return result;
     }
 
 //    private void checkSchoolAccount(String schoolProgram, String schoolStatus, Long userId, String messageText, Long chatId, Integer threadId) throws TelegramApiException, InterruptedException {
