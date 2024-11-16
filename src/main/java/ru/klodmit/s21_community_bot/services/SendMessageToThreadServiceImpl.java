@@ -25,7 +25,6 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
                 .text(text)
                 .parseMode("MarkdownV2")
                 .build();
-        botMain.execute(sendMessage);
         Message sentMessage = botMain.execute(sendMessage);
         return sentMessage.getMessageId();
     }
