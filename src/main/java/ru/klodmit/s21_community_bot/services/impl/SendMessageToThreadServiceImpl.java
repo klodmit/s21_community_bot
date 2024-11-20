@@ -1,13 +1,13 @@
-package ru.klodmit.s21_community_bot.services;
+package ru.klodmit.s21_community_bot.services.impl;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.bot.BotMain;
+import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 
 import java.util.concurrent.CompletableFuture;
 

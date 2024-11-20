@@ -15,7 +15,8 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
-import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
+import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -53,59 +54,27 @@ public class BotMain extends TelegramLongPollingBot {
     public void onUpdateReceived(@NotNull Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
-
-        }
-
-
-        if (update.hasMessage() && update.getMessage().hasText()) {
-            Long chatId = update.getMessage().getChatId();
-            String message = update.getMessage().getText().trim();
-            Integer threadId = update.getMessage().getMessageThreadId();
-            Long userId = update.getMessage().getFrom().getId();
-
-            //TODO: Check verifyService remake it and refactor this sample
-            if (threadId != null && threadId == 30147 && !update.getMessage().isCommand()) {
-                // обработка запроса через школьный апи
-                String schoolStatus = checkSchoolAccount.getUserStatus(message.toLowerCase());
-                String schoolProgram = checkSchoolAccount.getUserProgram(message.toLowerCase());
-
-//                    checkSchoolAccount(schoolProgram, schoolStatus, userId, message, chatId, threadId);
-
-
+            if(messageHasNewChatMembers(message)) {
+                handleNewChatMembersAsync(message);
+            } else if (message.hasText()) {
+                handleMessage(update);
             }
-
-            if (message.startsWith(COMMAND_PREFIX)) {
-                String[] splitMessage = message.split(" ", 2);
-                String commandIdentifier = splitMessage[0].toLowerCase();
-                String arguments = splitMessage.length > 1 ? splitMessage[1] : null; // Используем null, если аргументы отсутствуют
-                Command command = commandContainer.retrieveCommand(commandIdentifier);
-
-                if (command != null) {
-                    command.execute(update, arguments); // Передаем аргументы или null
-                }
-            }
-//            handleUserReply(update);
-
         }
     }
 
-    private void handleNewChatMember(Message message) {
+    private boolean messageHasNewChatMembers(Message message) {
+        return message.getNewChatMembers() != null && !message.getNewChatMembers().isEmpty();
+    }
+
+    private void handleNewChatMembersAsync(Message message) {
         Long chatId = message.getChatId();
+
         message.getNewChatMembers().forEach(newUser -> {
             CompletableFuture.runAsync(() -> {
-
-            });
-            SendMessage sendMessage = new SendMessage();
-            sendMessage.setChatId(chatId);
-            sendMessage.setText(text);
-            sendMessage.setParseMode("MarkdownV2");
-            CompletableFuture.runAsync(() -> {
-                try {
-                    Integer sentMessageId = execute(sendMessage).getMessageId();
-                    scheduleMessageDeletion(chatId, sentMessageId);
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
+                handleNewChatMember(message, newUser.getId(), newUser.getFirstName(), chatId);
+            }).exceptionally(ex -> {
+                log.error("Error handling new chat member asynchronously: {}", ex.getMessage(), ex);
+                return null;
             });
         });
     }
@@ -120,11 +89,59 @@ public class BotMain extends TelegramLongPollingBot {
                     mentionText
             );
 
-            Integer sentMessageId = sendMessageService.sendMessage(chatId.toString(), text, "MarkdownV2");
-            scheduleMessageDeletion(chatId, sentMessageId);
+            sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), text, "MarkdownV2")
+                    .thenAccept(sendMessageId -> {
+                        scheduleMessageDeletion(chatId, sendMessageId);
+                    }).exceptionally(ex -> {
+                        log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
+                        return null;
+                    });
         } catch (Exception e) {
             log.error("Error in handleNewChatMember: {}", e.getMessage(), e);
         }
+    }
+
+    private void handleMessage(Update update) throws TelegramApiException {
+        Message message = update.getMessage();
+        String text = message.getText().trim();
+
+        if (isThreadMessage(message)) {
+            handleThreadMessage(update);
+        } else if (text.startsWith(COMMAND_PREFIX)) {
+            handleCommand(update);
+        }
+        
+    }
+
+    private void handleThreadMessage(Update update) {
+        Message message = update.getMessage();
+        String text = message.getText().trim().toLowerCase();
+
+        String schoolStatus = checkSchoolAccount.getUserStatus(text);
+        String schoolProgram = checkSchoolAccount.getUserProgram(text);
+
+        //TODO: add school account check
+    }
+
+    private void handleCommand(Update update) throws TelegramApiException {
+        Message message = update.getMessage();
+        String text = message.getText().trim();
+        String[] splitMessage = text.split(" ", 2);
+
+        String commandIdentifier = splitMessage[0].toLowerCase();
+        String arguments = splitMessage.length > 1 ? splitMessage[1] : null;
+
+        Command command = commandContainer.retrieveCommand(commandIdentifier);
+        if (command != null) {
+            command.execute(update, arguments);
+        } else {
+            log.warn("Unknown command: {}", commandIdentifier);
+        }
+    }
+
+    private boolean isThreadMessage(Message message) {
+        Integer messageThreadId = message.getMessageThreadId();
+        return messageThreadId != null && messageThreadId.equals(message.getMessageThreadId()) && !message.isCommand();
     }
 
     private void deleteMessage(String chatId, Integer messageId) throws TelegramApiException {
@@ -135,9 +152,8 @@ public class BotMain extends TelegramLongPollingBot {
         scheduler.schedule(() -> {
             // Удаляем сообщение асинхронно
             CompletableFuture.runAsync(() -> {
-                DeleteMessage deleteMessage = new DeleteMessage(chatId.toString(), messageId);
                 try {
-                    execute(deleteMessage);
+                    deleteMessage(chatId.toString(), messageId);
                 } catch (TelegramApiException e) {
                     throw new RuntimeException(e);
                 }
@@ -145,46 +161,12 @@ public class BotMain extends TelegramLongPollingBot {
         }, 5, TimeUnit.MINUTES);
     }
 
-//    public void handleUserReply(Update update) {
-//        if (update.hasMessage() && update.getMessage().getReplyToMessage() != null) {
-//            Long userId = update.getMessage().getFrom().getId();
-//            String userMessage = update.getMessage().getText();
-//            Integer replyMessageId = update.getMessage().getReplyToMessage().getMessageId();
-//
-//            // Проверяем, что это ответ на наше сообщение с кодом
-//            VerificationInfo verificationInfo;
-//            if (verificationInfo != null && verificationInfo.getMessageId().equals(replyMessageId)) {
-//                // Сравниваем код
-//                if (userMessage.equals(verificationInfo.getVerificationCode())) {
-//                    // Успешная верификация
-//                    try {
-//                        System.out.println("g");
-//                        Integer sentId = sendMessageToThreadServiceImpl.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), "Успешная верификация\\!");
-//                        userService.saveUser(userId, verificationInfo.getSchoolLogin(), true);
-//                        deleteMessage(update.getMessage().getChatId(), replyMessageId);
-//                        deleteMessage(update.getMessage().getChatId(), update.getMessage().getMessageId());
-//                        deleteMessage(update.getMessage().getChatId(), sentId);
-//
-//                    } catch (TelegramApiException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                } else {
-//                    // Неверный код
-//                    try {
-//                        System.out.println("b");
-//                        sendMessage(update.getMessage().getChatId(), update.getMessage().getMessageThreadId(), "Неверный код\\. Попробуй еще раз\\.");
-//                    } catch (TelegramApiException e) {
-//                        throw new RuntimeException(e);
-//                    }
-//                }
-//            }
-//        }
-//    }
+    //TODO: MAKE HANDLE USER REPLY
 
 
     @Override
     public String getBotUsername() {
-        return "verification_school_account_bot";
+        return BOT_USERNAME;
     }
 
     private String mentionUser(String userFirstName, Long userId) {
@@ -193,52 +175,12 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     private String escapeMarkdownV2(String text) {
-        String result = "";
-        if (text != null) {// Список символов, которые нужно экранировать
-            String[] specialChars = {"\\", ".", "_", "*", "[", "]", "(", ")", "~", ">", "#", "+", "-", "=", "|", "{", "}", "!"};
-            for (String specialChar : specialChars) {
-                text = text.replace(specialChar, "\\" + specialChar);
-            }
-            result = text;
+        if (text == null) {
+            return "";
         }
-        return result;
+        return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
     }
 
-//    private void checkSchoolAccount(String schoolProgram, String schoolStatus, Long userId, String messageText, Long chatId, Integer threadId) throws TelegramApiException, InterruptedException {
-//
-//        if (schoolStatus.equals("ACTIVE") || schoolStatus.equals("TEMPORARY_BLOCKING") || schoolStatus.equals("FROZEN")) {
-//            if ("Core program".equals(schoolProgram)) {
-//                System.out.println(userId + " " + messageText.toLowerCase());
-//                userService.saveUser(userId, messageText.toLowerCase());
-//                String text = "Супер, твой ник есть на платформе";
-//                Integer sentId = sendMessage(chatId, threadId, text);
-//                sleep(10000);
-//                deleteMessage(chatId, sentId);
-//            } else {
-//                String text = "Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
-//                sendMessageAndBlock(userId, chatId, threadId, text);
-//            }
-//        } else if (schoolStatus.equals("EXPELLED") || "BLOCKED".equals(schoolStatus)) {
-//            String text = "Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\nЕсли все\\-таки хочешь остаться в чате, напиши администрации";
-//            sleep(10000);
-//            sendMessageAndBlock(userId, chatId, threadId, text);
-//        } else if (schoolStatus.equals("NOT_FOUND")) {
-//            String text = "Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
-//            Integer sentMessageId = sendMessage(chatId, threadId, text);
-//            scheduler.schedule(() -> {
-//                try {
-//                    if (hasSendMessageToTopic(newUserId)) {
-//                        deleteMessage(chatId, sentMessageId);
-//                    } else {
-//                        banChatMember(chatId, userId);
-//                        deleteMessage(chatId, sentMessageId);
-//                    }
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }, 30, TimeUnit.SECONDS);
-//        }
-//
-//    }
+    //TODO: MAKE SCHOOL CHECK ACCOUNT
 
 }

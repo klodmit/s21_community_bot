@@ -1,4 +1,4 @@
-package ru.klodmit.s21_community_bot.services;
+package ru.klodmit.s21_community_bot.services.impl;
 
 import lombok.SneakyThrows;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChatAdm
 import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChatMember;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMember;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import ru.klodmit.s21_community_bot.services.GetChatMembersService;
 
 import java.util.List;
 
