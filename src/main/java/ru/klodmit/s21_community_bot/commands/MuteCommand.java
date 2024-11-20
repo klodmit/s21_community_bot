@@ -12,7 +12,7 @@ import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-public class MuteCommand implements Command{
+public class MuteCommand implements Command {
     private final TelegramLongPollingBot bot;
     private final SendMessageToThreadService sendMessageToThreadService;
     private final GetChatMembersService getChatMembersService;
@@ -27,37 +27,41 @@ public class MuteCommand implements Command{
 
     @SneakyThrows
     @Override
-    public void execute(Update update, String args){
+    public void execute(Update update, String args) {
         Long chatId = update.getMessage().getChatId();
         Long userId = update.getMessage().getFrom().getId();
         ChatMember userChatMember = getChatMembersService.getChatMember(chatId, userId);
         String status = userChatMember.getStatus();
-        if (status.equals("administrator") || status.equals("creator")){
-            if (args == null || args.isEmpty()){
+        if (status.equals("administrator") || status.equals("creator")) {
+            if (args == null || args.isEmpty()) {
                 int defaultDuration = 1440;
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
                 muteUser(chatId.toString(), targetUserId, defaultDuration);
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день","MarkdownV2");
-            } else if (args !=null || args.startsWith("@")) {
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день", "MarkdownV2");
+            } else if (args != null || args.startsWith("@")) {
                 String[] parts = args.split(" ");
-                if(parts.length == 2){
+                if (parts.length == 2) {
                     String timeStr = parts[0];
                     String durationStr = parts[1];
                     int durationInMinutes = parseDuration(timeStr, durationStr);
                     Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                    muteUser(chatId.toString(), targetUserId, durationInMinutes);
-                    sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr,"MarkdownV2");
+                    if (durationInMinutes < 0){
+                        sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Неверный формат времени", "MarkdownV2");
+                    } else{
+                        muteUser(chatId.toString(), targetUserId, durationInMinutes);
+                        sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr, "MarkdownV2");
+                    }
                 }
             }
         } else {
             int defaultDuration = 1440;
             muteUser(chatId.toString(), userId, defaultDuration);
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.","MarkdownV2");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.", "MarkdownV2");
         }
     }
 
     private int parseDuration(String time, String duration) {
-        int multiplier = 0;
+        int multiplier;
         if (duration.equals("d")) {
             multiplier = 1440;
         } else if (duration.equals("h")) {
@@ -69,12 +73,12 @@ public class MuteCommand implements Command{
         } else {
             return -1;
         }
-        Integer timeDuration = Integer.valueOf(time);
+        int timeDuration = Integer.parseInt(time);
         return timeDuration * multiplier;
     }
 
     @SneakyThrows
-    public void muteUser(String chatId, Long userId, int duration){
+    public void muteUser(String chatId, Long userId, int duration) {
         ChatPermissions permissions = ChatPermissions.builder()
                 .canSendAudios(false)
                 .canSendDocuments(false)
