@@ -14,7 +14,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
-import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
+import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
