@@ -11,7 +11,7 @@ import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 
 import java.util.concurrent.CompletableFuture;
 
-@Service
+
 @Slf4j
 public class SendMessageToThreadServiceImpl implements SendMessageToThreadService {
 

@@ -13,7 +13,8 @@ public enum CommandName {
     VALIDATE("/validate"),
     BANAN("/banan"),
     CHECKCHAT("/checkchat"),
-    BANUSERS("/banusers");
+    BANUSERS("/banusers"),
+    SETMODE("/setmode");
 
 
     private final String commandName;

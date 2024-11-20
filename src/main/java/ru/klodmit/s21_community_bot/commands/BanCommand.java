@@ -31,7 +31,7 @@ public class BanCommand implements Command{
         if (status.equals("administrator") || status.equals("creator")){
             if (args == null || args.isEmpty()){
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь будет забанен");
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь будет забанен", "MarkdownV2");
             }
         }
     }

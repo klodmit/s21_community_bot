@@ -37,7 +37,7 @@ public class MuteCommand implements Command{
                 int defaultDuration = 1440;
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
                 muteUser(chatId.toString(), targetUserId, defaultDuration);
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день");
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день","MarkdownV2");
             } else if (args !=null || args.startsWith("@")) {
                 String[] parts = args.split(" ");
                 if(parts.length == 2){
@@ -46,13 +46,13 @@ public class MuteCommand implements Command{
                     int durationInMinutes = parseDuration(timeStr, durationStr);
                     Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
                     muteUser(chatId.toString(), targetUserId, durationInMinutes);
-                    sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr);
+                    sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr,"MarkdownV2");
                 }
             }
         } else {
             int defaultDuration = 1440;
             muteUser(chatId.toString(), userId, defaultDuration);
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.","MarkdownV2");
         }
     }
 

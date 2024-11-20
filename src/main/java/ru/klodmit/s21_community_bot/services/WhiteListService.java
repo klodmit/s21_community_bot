@@ -8,11 +8,11 @@ import ru.klodmit.s21_community_bot.repos.WhitelistInterface;
 
 
 @Service
-public class WhiteListDto {
+public class WhiteListService {
     private final WhitelistInterface whitelistInterface;
 
     @Autowired
-    public WhiteListDto(WhitelistInterface whiteListInterface) {
+    public WhiteListService(WhitelistInterface whiteListInterface) {
         this.whitelistInterface = whiteListInterface;
     }
 

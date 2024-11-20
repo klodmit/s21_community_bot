@@ -37,10 +37,10 @@ public class ValidateCommand implements Command{
         if (status.equals("administrator") || status.equals("creator")){
             if (args == null || args.isEmpty()){
                 String text = "Для валидации команды используй /validate ник на платформе";
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), text);
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), text,"MarkdownV2");
             } else{
                 String text = "Тебе в рокет чат был отправлен код. Пришли мне его ответом на это сообщение";
-                Integer sentId = sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), text);
+                Integer sentId = sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), text,"MarkdownV2");
                 String verificationCode = verificationByRocketChat.getAuth(args);
                 storeVerificationInfo(userId, sentId, verificationCode, args);
             }

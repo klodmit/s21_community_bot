@@ -25,7 +25,7 @@ services:
 
   postgres-db:
     image: postgres:17-alpine3.20
-    container_name: postgres-db
+    container_name: community-db
     environment:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
@@ -40,6 +40,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@s21-community.bot
+      PGADMIN_DEFAULT_PASSWORD: 228972Gfg
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres-db
+    restart: always
 
 volumes:
   postgres_data:

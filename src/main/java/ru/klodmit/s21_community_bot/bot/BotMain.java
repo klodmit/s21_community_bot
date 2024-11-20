@@ -35,13 +35,11 @@ public class BotMain extends TelegramLongPollingBot {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public BotMain(SendMessageToThreadServiceImpl sendMessageService,
-                   CheckSchoolAccount checkSchoolAccount,
-                   CommandContainer commandContainer) {
+    public BotMain() {
         super(BOT_TOKEN);
-        this.sendMessageService = sendMessageService;
-        this.checkSchoolAccount = checkSchoolAccount;
-        this.commandContainer = commandContainer;
+        this.commandContainer = new CommandContainer(new SendMessageToThreadServiceImpl(this), this);
+        this.sendMessageService = new SendMessageToThreadServiceImpl(this);
+        this.checkSchoolAccount = new CheckSchoolAccount();
     }
 
     @PostConstruct

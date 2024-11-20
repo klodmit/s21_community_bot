@@ -27,10 +27,10 @@ public class WarnCommand implements Command{
         if (status.equals("administrator") || status.equals("creator")){
             if (args == null || args.isEmpty()){
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), targetUserId.toString());
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), targetUserId.toString(),"MarkdownV2");
             } else if(args.startsWith("@")){
                 Long targetUserId = getChatMembersService.getUserIdByUsername(chatId,args.substring(1));
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), targetUserId.toString());
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), targetUserId.toString(),"MarkdownV2");
             }
         }
 

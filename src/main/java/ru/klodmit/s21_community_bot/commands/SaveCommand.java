@@ -30,7 +30,7 @@ public class SaveCommand implements Command{
         if (status.equals("administrator") || status.equals("creator")){
             if (args == null || args.isEmpty()){
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь сохранен");
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь сохранен","MarkdownV2");
             }
         }
     }

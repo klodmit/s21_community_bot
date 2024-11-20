@@ -46,7 +46,8 @@ public class AdminCommand implements Command {
                 sendMessageToThreadService.sendMessage(
                         chatId.toString(),
                         update.getMessage().getMessageThreadId(),
-                        adminList.toString()
+                        adminList.toString(),
+                        "MarkdownV2"
                 );
             }
         }

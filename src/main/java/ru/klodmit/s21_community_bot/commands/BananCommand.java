@@ -15,7 +15,7 @@ public class BananCommand implements Command{
     @Override
     public void execute(Update update,String args) throws TelegramApiException {
         if (args == null || args.isEmpty()) {
-            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), BANAN_MESSAGE);
+            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), BANAN_MESSAGE, "MarkdownV2");
         }
     }
 }
