@@ -17,7 +17,7 @@ public class FaqCommand implements Command {
     @Override
     public void execute(Update update, String args) throws TelegramApiException {
         if (args == null || args.isEmpty()) {
-            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(),update.getMessage().getMessageThreadId(),FAQ_MESSAGE);
+            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(),update.getMessage().getMessageThreadId(),FAQ_MESSAGE, "MarkdownV2");
         }
     }
 }

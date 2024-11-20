@@ -1,0 +1,19 @@
+bot:
+    token: systemEnvironment['BOT_TOKEN']
+    username: systemEnvironment['BOT_NAME']
+school:
+    password: 9G3CR7XgNE
+    username: rhaellaa@student.21-school.ru
+server:
+    port: 5555
+spring:
+    datasource:
+        password: 9G3CR7XgNE
+        url: jdbc:postgresql://147.45.42.229:5432/CommunityDatabase
+        username: admin
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+    liquibase:
+        change-log: db/changelog/main-changelog.yaml

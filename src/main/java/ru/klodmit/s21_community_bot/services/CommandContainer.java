@@ -5,6 +5,9 @@ import com.google.common.collect.ImmutableMap;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import ru.klodmit.s21_community_bot.commands.*;
+import ru.klodmit.s21_community_bot.services.impl.GetChatMembersServiceImpl;
+
+import java.util.function.Function;
 
 import static ru.klodmit.s21_community_bot.commands.CommandName.*;
 
@@ -12,6 +15,8 @@ import static ru.klodmit.s21_community_bot.commands.CommandName.*;
 @Service
 public class CommandContainer {
     private final ImmutableMap<String, Command> commandMap;
+
+//    private final ImmutableMap<String, Function<Command, Boolean>> commandMapv2;
 
 
     public CommandContainer(SendMessageToThreadService sendMessageToThreadService, TelegramLongPollingBot bot) {

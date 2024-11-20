@@ -1,0 +1,309 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1732018154005-1
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: action_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-2
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: activity_log_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-3
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: ban_history_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-4
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: reason_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-5
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: user_warning_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-6
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createSequence:
+            incrementBy: 1
+            sequenceName: white_list_id_seq
+            startValue: 1
+  - changeSet:
+      id: 1732018154005-7
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_action
+                  name: id
+                  type: INT
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: description
+                  type: text(2147483647)
+            tableName: action
+  - changeSet:
+      id: 1732018154005-8
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_activity_log
+                  name: id
+                  type: INT
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: action_id
+                  type: INT
+              - column:
+                  defaultValueComputed: now()
+                  name: timestamp
+                  type: DATETIME
+            tableName: activity_log
+  - changeSet:
+      id: 1732018154005-9
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_ban_history
+                  name: id
+                  type: INT
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: reason_id
+                  type: INT
+              - column:
+                  defaultValueComputed: now()
+                  name: start_time
+                  type: DATETIME
+              - column:
+                  name: end_time
+                  type: DATETIME
+            tableName: ban_history
+  - changeSet:
+      id: 1732018154005-10
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_reason
+                  name: id
+                  type: INT
+              - column:
+                  constraints:
+                    nullable: false
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: description
+                  type: text(2147483647)
+            tableName: reason
+  - changeSet:
+      id: 1732018154005-11
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_user_warning
+                  name: id
+                  type: INT
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: message
+                  type: text(2147483647)
+              - column:
+                  defaultValueComputed: now()
+                  name: timestamp
+                  type: DATETIME
+            tableName: user_warning
+  - changeSet:
+      id: 1732018154005-12
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_users
+                  name: id
+                  type: BIGINT
+              - column:
+                  name: school_name
+                  type: VARCHAR(255)
+              - column:
+                  defaultValueBoolean: false
+                  name: is_admin
+                  type: BOOLEAN
+              - column:
+                  defaultValueBoolean: false
+                  name: is_validated
+                  type: BOOLEAN
+            tableName: users
+  - changeSet:
+      id: 1732018154005-13
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_white_list
+                  name: id
+                  type: INT
+              - column:
+                  name: user_id
+                  type: BIGINT
+              - column:
+                  name: reason_id
+                  type: INT
+            tableName: white_list
+  - changeSet:
+      id: 1732018154005-14
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: action_id
+            baseTableName: activity_log
+            constraintName: FK_ACTIVITY_LOG_ON_ACTION
+            onDelete: SET NULL
+            referencedColumnNames: id
+            referencedTableName: action
+  - changeSet:
+      id: 1732018154005-15
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: user_id
+            baseTableName: activity_log
+            constraintName: FK_ACTIVITY_LOG_ON_USER
+            onDelete: CASCADE
+            referencedColumnNames: id
+            referencedTableName: users
+  - changeSet:
+      id: 1732018154005-16
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: reason_id
+            baseTableName: ban_history
+            constraintName: FK_BAN_HISTORY_ON_REASON
+            onDelete: SET NULL
+            referencedColumnNames: id
+            referencedTableName: reason
+  - changeSet:
+      id: 1732018154005-17
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: user_id
+            baseTableName: ban_history
+            constraintName: FK_BAN_HISTORY_ON_USER
+            onDelete: CASCADE
+            referencedColumnNames: id
+            referencedTableName: users
+  - changeSet:
+      id: 1732018154005-18
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: user_id
+            baseTableName: user_warning
+            constraintName: FK_USER_WARNING_ON_USER
+            onDelete: CASCADE
+            referencedColumnNames: id
+            referencedTableName: users
+  - changeSet:
+      id: 1732018154005-19
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: reason_id
+            baseTableName: white_list
+            constraintName: FK_WHITE_LIST_ON_REASON
+            onDelete: SET NULL
+            referencedColumnNames: id
+            referencedTableName: reason
+  - changeSet:
+      id: 1732018154005-20
+      author: erikm
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - addForeignKeyConstraint:
+            baseColumnNames: user_id
+            baseTableName: white_list
+            constraintName: FK_WHITE_LIST_ON_USER
+            onDelete: CASCADE
+            referencedColumnNames: id
+            referencedTableName: users
+
