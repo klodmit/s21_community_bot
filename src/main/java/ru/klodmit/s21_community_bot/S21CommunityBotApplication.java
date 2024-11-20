@@ -14,7 +14,7 @@ import ru.klodmit.s21_community_bot.bot.BotMain;
 @SpringBootApplication
 @EnableScheduling
 @EnableAsync
-@EnableFeignClients(basePackages = "ru.klodmit.s21_community_bot.services.impl")
+@EnableFeignClients(basePackages = "ru.klodmit.s21_community_bot.services")
 public class S21CommunityBotApplication {
 
     @SneakyThrows
