@@ -7,7 +7,6 @@ import org.jetbrains.annotations.NotNull;
 
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -15,7 +14,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
-import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
+import ru.klodmit.s21_community_bot.services.SendMessageToThreadServiceImpl;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
