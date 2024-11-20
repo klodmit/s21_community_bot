@@ -13,19 +13,6 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>s21_community_bot</name>
 	<description>s21_community_bot</description>
-	<url/>
-	<licenses>
-		<license/>
-	</licenses>
-	<developers>
-		<developer/>
-	</developers>
-	<scm>
-		<connection/>
-		<developerConnection/>
-		<tag/>
-		<url/>
-	</scm>
 	<properties>
 		<java.version>21</java.version>
 		<spring-cloud.version>2023.0.2</spring-cloud.version>
@@ -63,7 +50,7 @@
 		<dependency>
 			<groupId>javax.xml.bind</groupId>
 			<artifactId>jaxb-api</artifactId>
-			<version>2.3.1</version>
+			<version>2.4.0-b180830.0359</version>
 		</dependency>
 		<dependency>
 			<groupId>org.postgresql</groupId>
@@ -83,15 +70,15 @@
 		<dependency>
 			<groupId>org.telegram</groupId>
 			<artifactId>telegrambots</artifactId>
-			<version>6.5.0</version>
+			<version>6.9.7.0</version>
 			<type>jar</type>
 		</dependency>
-		<dependency>
-			<groupId>org.telegram</groupId>
-			<artifactId>telegrambots-meta</artifactId>
-			<version>6.5.0</version>
-			<type>jar</type>
-		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.telegram</groupId>-->
+<!--			<artifactId>telegrambots-meta</artifactId>-->
+<!--			<version>7.7.1</version>-->
+<!--			<type>jar</type>-->
+<!--		</dependency>-->
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
@@ -105,7 +92,7 @@
 		<dependency>
 			<groupId>org.jetbrains</groupId>
 			<artifactId>annotations</artifactId>
-			<version>13.0</version>
+			<version>24.1.0</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -116,6 +103,10 @@
 			<groupId>org.json</groupId>
 			<artifactId>json</artifactId>
 			<version>20231013</version>
+		</dependency>
+		<dependency>
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
 		</dependency>
 	</dependencies>
 
@@ -133,7 +124,23 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.13.0</version> <!-- Обновите на последнюю версию -->
+				<configuration>
+					<source>21</source>
+					<target>21</target>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
+	<repositories>
+		<repository>
+			<id>maven_central</id>
+			<name>Maven Central</name>
+			<url>https://repo.maven.apache.org/maven2/</url>
+		</repository>
+	</repositories>
 
 </project>

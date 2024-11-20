@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  telegram-bot:
+    image: s21_community-bot:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DB_NAME: ${DB_NAME}
+        DB_USER: ${DB_USER}
+        DB_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5555:5555"
+    environment:
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      BOT_NAME: ${BOT_NAME}
+      BOT_TOKEN: ${BOT_TOKEN}
+    depends_on:
+      - postgres-db
+
+  postgres-db:
+    image: postgres:17-alpine3.20
+    container_name: postgres-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:

@@ -2,6 +2,7 @@ package ru.klodmit.s21_community_bot.bot;
 
 import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 
 import org.springframework.stereotype.Component;
@@ -20,61 +21,39 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-
+@Slf4j
 @Component
 public class BotMain extends TelegramLongPollingBot {
     public static final String COMMAND_PREFIX = "/";
-    private final SendMessageToThreadServiceImpl sendMessageToThreadServiceImpl;
+    private static final String BOT_USERNAME = System.getenv("BOT_NAME");
+    private static final String BOT_TOKEN = System.getenv("BOT_TOKEN");
+
+    private final SendMessageToThreadServiceImpl sendMessageService;
     private final CheckSchoolAccount checkSchoolAccount;
-
-
     private final CommandContainer commandContainer;
 
+    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
-    public BotMain() {
-        super("7001537895:AAFS8lJnIz8U1-WhOyf_BWW4htWA6XQnAOM");
-        this.commandContainer = new CommandContainer(new SendMessageToThreadServiceImpl(this), this);
-        this.sendMessageToThreadServiceImpl = new SendMessageToThreadServiceImpl(this);
-        this.checkSchoolAccount = new CheckSchoolAccount();
+    public BotMain(SendMessageToThreadServiceImpl sendMessageService,
+                   CheckSchoolAccount checkSchoolAccount,
+                   CommandContainer commandContainer) {
+        super(BOT_TOKEN);
+        this.sendMessageService = sendMessageService;
+        this.checkSchoolAccount = checkSchoolAccount;
+        this.commandContainer = commandContainer;
     }
 
     @PostConstruct
     public void init() {
-        System.out.println("Bot initialized and running.");
+        log.info("Bot initialized and running.");
     }
-
-    private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
 
     @SneakyThrows
     @Override
     public void onUpdateReceived(@NotNull Update update) {
-        if (update.getMessage() != null && update.getMessage().getNewChatMembers() != null) {
+        if (update.hasMessage()) {
             Message message = update.getMessage();
-            Long chatId = message.getChatId();
-            update.getMessage().getNewChatMembers().forEach(newUser -> {
-                DeleteMessage deleteMessage = new DeleteMessage(chatId.toString(), message.getMessageId());
-                try {
-                    execute(deleteMessage);
-                } catch (TelegramApiException e) {
-                    throw new RuntimeException(e);
-                }
-                Long userId = newUser.getId();
-                String userFirstName = newUser.getFirstName();
-                String mentionText = mentionUser(userFirstName, userId);
-                String text = "Добро пожаловать, " + mentionText + "\nУ тебя есть 5 минут для того, чтобы указать свой школьный ник в топике [ID](https://t.me/c/1975595161/30147)";
-                SendMessage sendMessage = new SendMessage();
-                sendMessage.setChatId(chatId);
-                sendMessage.setText(text);
-                sendMessage.setParseMode("MarkdownV2");
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        Integer sentMessageId = execute(sendMessage).getMessageId();
-                        scheduleMessageDeletion(chatId, sentMessageId);
-                    } catch (TelegramApiException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            });
+
         }
 
 
@@ -108,6 +87,48 @@ public class BotMain extends TelegramLongPollingBot {
 //            handleUserReply(update);
 
         }
+    }
+
+    private void handleNewChatMember(Message message) {
+        Long chatId = message.getChatId();
+        message.getNewChatMembers().forEach(newUser -> {
+            CompletableFuture.runAsync(() -> {
+
+            });
+            SendMessage sendMessage = new SendMessage();
+            sendMessage.setChatId(chatId);
+            sendMessage.setText(text);
+            sendMessage.setParseMode("MarkdownV2");
+            CompletableFuture.runAsync(() -> {
+                try {
+                    Integer sentMessageId = execute(sendMessage).getMessageId();
+                    scheduleMessageDeletion(chatId, sentMessageId);
+                } catch (TelegramApiException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        });
+    }
+
+    private void handleNewChatMember(Message message, Long userId, String userFirstName, Long chatId) {
+        try {
+            deleteMessage(chatId.toString(), message.getMessageId());
+
+            String mentionText = mentionUser(userFirstName, userId);
+            String text = String.format(
+                    "Добро пожаловать, %s\nУ тебя есть 5 минут для того, чтобы указать свой школьный ник в топике [ID](https://t.me/c/1975595161/30147)",
+                    mentionText
+            );
+
+            Integer sentMessageId = sendMessageService.sendMessage(chatId.toString(), text, "MarkdownV2");
+            scheduleMessageDeletion(chatId, sentMessageId);
+        } catch (Exception e) {
+            log.error("Error in handleNewChatMember: {}", e.getMessage(), e);
+        }
+    }
+
+    private void deleteMessage(String chatId, Integer messageId) throws TelegramApiException {
+        execute(new DeleteMessage(chatId, messageId));
     }
 
     private void scheduleMessageDeletion(Long chatId, Integer messageId) {

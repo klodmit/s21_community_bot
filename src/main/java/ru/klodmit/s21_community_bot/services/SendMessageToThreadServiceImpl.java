@@ -1,13 +1,18 @@
 package ru.klodmit.s21_community_bot.services;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.bot.BotMain;
 
+import java.util.concurrent.CompletableFuture;
+
 @Service
+@Slf4j
 public class SendMessageToThreadServiceImpl implements SendMessageToThreadService {
 
     private final BotMain botMain;
@@ -15,30 +20,45 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
     public SendMessageToThreadServiceImpl(BotMain botMain) {
         this.botMain = botMain;
     }
+
     @SneakyThrows
     @Override
-    public Integer sendMessage(String chatId, Integer threadId, String message) {
+    public Integer sendMessage(String chatId, Integer threadId, String message, String parseMode) {
         String text = escapeMarkdownV2(message);
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
                 .messageThreadId(threadId)
                 .text(text)
-                .parseMode("MarkdownV2")
+                .parseMode(parseMode)
                 .build();
-        Message sentMessage = botMain.execute(sendMessage);
-        return sentMessage.getMessageId();
+        return botMain.execute(sendMessage).getMessageId();
+    }
+
+    @Override
+    @Async
+    public CompletableFuture<Integer> sendMessageAsync(String chatId, Integer threadId, String message, String parseMode){
+        try {
+            String text = escapeMarkdownV2(message);
+            SendMessage sendMessage = SendMessage.builder()
+                    .chatId(chatId)
+                    .messageThreadId(threadId)
+                    .text(text)
+                    .parseMode(parseMode)
+                    .build();
+
+            Integer messageId = botMain.execute(sendMessage).getMessageId();
+            return CompletableFuture.completedFuture(messageId);
+        } catch (TelegramApiException e) {
+            log.error("Error sending message asynchronously: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
     }
 
     private String escapeMarkdownV2(String text) {
         if (text == null) {
             return "";
         }
-        // Список символов, которые нужно экранировать
-        String[] specialChars = {"\\", ".", "_", "*", "[", "]", "(", ")", "~", ">", "#", "+", "-", "=", "|", "{", "}", "!"};
-        for (String specialChar : specialChars) {
-            text = text.replace(specialChar, "\\" + specialChar);
-        }
-        return text;
+        return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
     }
 
 }

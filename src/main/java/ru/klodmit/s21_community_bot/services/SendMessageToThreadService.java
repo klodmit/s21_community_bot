@@ -2,6 +2,8 @@ package ru.klodmit.s21_community_bot.services;
 
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.concurrent.CompletableFuture;
+
 public interface SendMessageToThreadService {
 
     /**
@@ -10,6 +12,7 @@ public interface SendMessageToThreadService {
      * @param chatId  provided chatId in which messages would be sent.
      * @param message provided message to be sent.
      */
-    Integer sendMessage(String chatId,Integer ThreadId, String message) throws TelegramApiException;
+    Integer sendMessage(String chatId, Integer threadId, String message, String parseMode);
+    CompletableFuture<Integer> sendMessageAsync(String chatId, Integer threadId, String message, String parseMode);
 
 }
