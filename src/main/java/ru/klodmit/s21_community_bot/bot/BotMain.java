@@ -14,31 +14,39 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.commands.Command;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
+import ru.klodmit.s21_community_bot.services.UserService;
 import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
+import static java.lang.Thread.sleep;
 
 @Slf4j
 @Component
 public class BotMain extends TelegramLongPollingBot {
     public static final String COMMAND_PREFIX = "/";
-    private static final String BOT_USERNAME = System.getenv("BOT_NAME");
-    private static final String BOT_TOKEN = System.getenv("BOT_TOKEN");
+    //    System.getenv("BOT_NAME");
+//    System.getenv("BOT_TOKEN"); РАСКОММЕНТИРОВАТЬ КОГДА БУДЕШЬ ПУШИТЬ
+    private static final String BOT_USERNAME = "verification_school_account_bot";
+    private static final String BOT_TOKEN = "7001537895:AAFS8lJnIz8U1-WhOyf_BWW4htWA6XQnAOM";
 
     private final SendMessageToThreadServiceImpl sendMessageService;
     private final CheckSchoolAccount checkSchoolAccount;
     private final CommandContainer commandContainer;
+    private final UserService userService;
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
 
-    public BotMain() {
+
+    public BotMain(
+            CheckSchoolAccount checkSchoolAccount,
+            UserService userService) {
         super(BOT_TOKEN);
-        this.commandContainer = new CommandContainer(new SendMessageToThreadServiceImpl(this), this);
         this.sendMessageService = new SendMessageToThreadServiceImpl(this);
-        this.checkSchoolAccount = new CheckSchoolAccount();
+        this.checkSchoolAccount = checkSchoolAccount;
+        this.commandContainer = new CommandContainer(sendMessageService, this);
+        this.userService = userService;
     }
 
     @PostConstruct
@@ -51,7 +59,7 @@ public class BotMain extends TelegramLongPollingBot {
     public void onUpdateReceived(@NotNull Update update) {
         if (update.hasMessage()) {
             Message message = update.getMessage();
-            if(messageHasNewChatMembers(message)) {
+            if (messageHasNewChatMembers(message)) {
                 handleNewChatMembersAsync(message);
             } else if (message.hasText()) {
                 handleMessage(update);
@@ -96,12 +104,12 @@ public class BotMain extends TelegramLongPollingBot {
         Message message = update.getMessage();
         String text = message.getText().trim();
 
-        if (isThreadMessage(message)) {
+        if (isThreadMessage(message) && (message.getMessageThreadId() == 3 || message.getMessageThreadId() == 30147)) {
             handleThreadMessage(update);
         } else if (text.startsWith(COMMAND_PREFIX)) {
             handleCommand(update);
         }
-        
+
     }
 
     private void handleThreadMessage(Update update) {
@@ -110,8 +118,7 @@ public class BotMain extends TelegramLongPollingBot {
 
         String schoolStatus = checkSchoolAccount.getUserStatus(text);
         String schoolProgram = checkSchoolAccount.getUserProgram(text);
-
-        //TODO: add school account check
+        checkSchoolAccountAsync(schoolProgram, schoolStatus, message.getFrom().getId(), text, message.getChatId(), message.getMessageThreadId());
     }
 
     private void handleCommand(Update update) throws TelegramApiException {
@@ -171,6 +178,68 @@ public class BotMain extends TelegramLongPollingBot {
         }
         return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
     }
+
+
+    private CompletableFuture<Void> checkSchoolAccountAsync(String schoolProgram, String schoolStatus, Long userId, String messageText, Long chatId, Integer threadId) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                // Проверка статуса школы
+                if ("ACTIVE".equals(schoolStatus) || "TEMPORARY_BLOCKING".equals(schoolStatus) || "FROZEN".equals(schoolStatus)) {
+                    handleActiveUser(schoolProgram, userId, messageText, chatId, threadId);
+                } else if ("EXPELLED".equals(schoolStatus) || "BLOCKED".equals(schoolStatus)) {
+                    handleBlockedUser(userId, chatId, threadId);
+                } else if ("NOT_FOUND".equals(schoolStatus)) {
+                    handleNotFoundUser(userId, chatId, threadId);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, executorService); // Используем пул потоков для асинхронного выполнения
+    }
+
+    private void handleActiveUser(String schoolProgram, Long userId, String messageText, Long chatId, Integer threadId) {
+        if ("Core program".equals(schoolProgram)) {
+            System.out.println(userId + " " + messageText.toLowerCase());
+            userService.saveUser(userId, messageText.toLowerCase());
+            String text = "Супер, твой ник есть на платформе";
+            System.out.println(text);
+
+            CompletableFuture.runAsync(() -> {
+//                System.out.println("Удаление сообщения через 10 секунд...");
+                // deleteMessage(chatId, sentId); // Удалить сообщение, если потребуется
+            }, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
+        } else {
+            String text = "Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
+            System.out.println(text);
+            // sendMessageAndBlock(userId, chatId, threadId, text);
+        }
+    }
+
+    private void handleBlockedUser(Long userId, Long chatId, Integer threadId) {
+        String text = "Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\n" +
+                "Если все\\-таки хочешь остаться в чате, напиши администрации";
+        CompletableFuture.runAsync(() -> {
+            System.out.println("Удаление сообщения и бан пользователя через 10 секунд..." + text);
+            // sendMessageAndBlock(userId, chatId, threadId, text);
+        }, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
+    }
+
+    private void handleNotFoundUser(Long userId, Long chatId, Integer threadId) {
+        String text = "Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
+        System.out.println(text);
+
+        CompletableFuture.runAsync(() -> {
+            System.out.println("Проверка и бан пользователя через 30 секунд...");
+            // if (hasSendMessageToTopic(userId)) {
+            //     deleteMessage(chatId, sentMessageId);
+            // } else {
+            //     banChatMember(chatId, userId);
+            //     deleteMessage(chatId, sentMessageId);
+            // }
+        }, CompletableFuture.delayedExecutor(30, TimeUnit.SECONDS));
+    }
+
+
 
 
 }

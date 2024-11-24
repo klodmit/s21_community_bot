@@ -19,10 +19,14 @@ public class S21CommunityBotApplication {
 
     @SneakyThrows
     public static void main(String[] args) {
-        SpringApplication.run(S21CommunityBotApplication.class, args);
-        TelegramBotsApi botsApi;
-        botsApi = new TelegramBotsApi(DefaultBotSession.class);
-        botsApi.registerBot(new BotMain());
+        var applicationContext = SpringApplication.run(S21CommunityBotApplication.class, args);
+
+        TelegramBotsApi botsApi = new TelegramBotsApi(DefaultBotSession.class);
+
+        // Получаем экземпляр BotMain из Spring Context
+        BotMain botMain = applicationContext.getBean(BotMain.class);
+
+        botsApi.registerBot(botMain);
     }
 
 }
