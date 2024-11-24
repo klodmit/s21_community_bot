@@ -66,14 +66,10 @@ public class BotMain extends TelegramLongPollingBot {
     private void handleNewChatMembersAsync(Message message) {
         Long chatId = message.getChatId();
 
-        message.getNewChatMembers().forEach(newUser -> {
-            CompletableFuture.runAsync(() -> {
-                handleNewChatMember(message, newUser.getId(), newUser.getFirstName(), chatId);
-            }).exceptionally(ex -> {
-                log.error("Error handling new chat member asynchronously: {}", ex.getMessage(), ex);
-                return null;
-            });
-        });
+        message.getNewChatMembers().forEach(newUser -> CompletableFuture.runAsync(() -> handleNewChatMember(message, newUser.getId(), newUser.getFirstName(), chatId)).exceptionally(ex -> {
+            log.error("Error handling new chat member asynchronously: {}", ex.getMessage(), ex);
+            return null;
+        }));
     }
 
     private void handleNewChatMember(Message message, Long userId, String userFirstName, Long chatId) {
@@ -87,9 +83,7 @@ public class BotMain extends TelegramLongPollingBot {
             );
 
             sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), text, "MarkdownV2")
-                    .thenAccept(sendMessageId -> {
-                        scheduleMessageDeletion(chatId, sendMessageId);
-                    }).exceptionally(ex -> {
+                    .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
                         log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                         return null;
                     });
@@ -178,6 +172,5 @@ public class BotMain extends TelegramLongPollingBot {
         return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
     }
 
-    //TODO: MAKE SCHOOL CHECK ACCOUNT
 
 }

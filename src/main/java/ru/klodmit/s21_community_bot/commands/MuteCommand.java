@@ -32,25 +32,29 @@ public class MuteCommand implements Command {
         Long userId = update.getMessage().getFrom().getId();
         ChatMember userChatMember = getChatMembersService.getChatMember(chatId, userId);
         String status = userChatMember.getStatus();
+        String cause = "Спам";
         if (status.equals("administrator") || status.equals("creator")) {
             if (args == null || args.isEmpty()) {
                 int defaultDuration = 1440;
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
+
                 muteUser(chatId.toString(), targetUserId, defaultDuration);
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день", "MarkdownV2");
-            } else if (args != null || args.startsWith("@")) {
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день, причина: " + cause, "MarkdownV2");
+            } else {
                 String[] parts = args.split(" ");
-                if (parts.length == 2) {
+                if (parts.length == 1) {
+                    String timeStr = parts[0];
+                    String durationStr = "null";
+                    timeProcessing(update, timeStr, durationStr, chatId, cause);
+                } else if (parts.length == 2) {
                     String timeStr = parts[0];
                     String durationStr = parts[1];
-                    int durationInMinutes = parseDuration(timeStr, durationStr);
-                    Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                    if (durationInMinutes < 0){
-                        sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Неверный формат времени", "MarkdownV2");
-                    } else{
-                        muteUser(chatId.toString(), targetUserId, durationInMinutes);
-                        sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr, "MarkdownV2");
-                    }
+                    timeProcessing(update, timeStr, durationStr, chatId, cause);
+                } else if (parts.length == 3) {
+                    String timeStr = parts[0];
+                    String durationStr = parts[1];
+                    cause = parts[2];
+                    timeProcessing(update, timeStr, durationStr, chatId, cause);
                 }
             }
         } else {
@@ -60,18 +64,27 @@ public class MuteCommand implements Command {
         }
     }
 
+    private void timeProcessing(Update update, String timeStr, String durationStr, Long chatId, String cause) {
+        int durationInMinutes = parseDuration(timeStr, durationStr);
+        Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
+        if (durationInMinutes < 0) {
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Неверный формат времени. Пример: /mute 5 часов спам", "MarkdownV2");
+        } else {
+            muteUser(chatId.toString(), targetUserId, durationInMinutes);
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr + ", причина: "+ cause, "MarkdownV2");
+        }
+    }
+
     private int parseDuration(String time, String duration) {
         int multiplier;
-        if (duration.equals("d")) {
-            multiplier = 1440;
-        } else if (duration.equals("h")) {
-            multiplier = 60;
-        } else if (duration.equals("m")) {
-            multiplier = 1;
-        } else if (duration.equals("lol")) {
-            multiplier = 0;
-        } else {
-            return -1;
+        switch (duration) {
+            case "день", "дня", "дней" -> multiplier = 1440;
+            case "час", "часа", "часов" -> multiplier = 60;
+            case "минута", "минуты", "минут", "мин" -> multiplier = 1;
+            case "lol" -> multiplier = 0;
+            default -> {
+                return -1;
+            }
         }
         int timeDuration = Integer.parseInt(time);
         return timeDuration * multiplier;
