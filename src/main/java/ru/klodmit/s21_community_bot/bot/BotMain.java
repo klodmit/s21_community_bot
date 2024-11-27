@@ -172,8 +172,7 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     private String mentionUser(String userFirstName, Long userId) {
-        String escapedFirstName = escapeMarkdownV2(userFirstName);
-        return "[" + escapedFirstName + "](tg://user?id=" + userId.toString() + ")";
+        return "[" + userFirstName + "](tg://user?id=" + userId.toString() + ")";
     }
 
     private String escapeMarkdownV2(String text) {
