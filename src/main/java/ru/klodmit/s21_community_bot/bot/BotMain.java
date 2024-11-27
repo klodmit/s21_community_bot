@@ -28,7 +28,7 @@ public class BotMain extends TelegramLongPollingBot {
     public static final String COMMAND_PREFIX = "/";
     //    System.getenv("BOT_NAME");
 //    System.getenv("BOT_TOKEN"); РАСКОММЕНТИРОВАТЬ КОГДА БУДЕШЬ ПУШИТЬ
-    private static final String BOT_USERNAME = System.getenv("BOT_NAME");;
+    private static final String BOT_USERNAME = System.getenv("BOT_NAME");
     private static final String BOT_TOKEN = System.getenv("BOT_TOKEN");
     private final SendMessageToThreadServiceImpl sendMessageService;
     private final CheckSchoolAccount checkSchoolAccount;
@@ -85,16 +85,15 @@ public class BotMain extends TelegramLongPollingBot {
             deleteMessage(chatId.toString(), message.getMessageId());
 
             String mentionText = mentionUser(userFirstName, userId);
-            String text = escapeMarkdownV2(WELCOME_MESSAGE.formatted(mentionText));
             if (userService.findUserById(userId)){
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), text , "MarkdownV2")
-                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), "С возвращением, " + mentionText)
+                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId,300)).exceptionally(ex -> {
                             log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                             return null;
                         });
             }else{
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText), "MarkdownV2")
-                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText))
+                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId,300)).exceptionally(ex -> {
                             log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                             return null;
                         });
@@ -151,7 +150,7 @@ public class BotMain extends TelegramLongPollingBot {
         execute(new DeleteMessage(chatId, messageId));
     }
 
-    private void scheduleMessageDeletion(Long chatId, Integer messageId) {
+    private void scheduleMessageDeletion(Long chatId, Integer messageId, int seconds) {
         scheduler.schedule(() -> {
             // Удаляем сообщение асинхронно
             CompletableFuture.runAsync(() -> {
@@ -161,7 +160,7 @@ public class BotMain extends TelegramLongPollingBot {
                     throw new RuntimeException(e);
                 }
             });
-        }, 5, TimeUnit.MINUTES);
+        }, seconds, TimeUnit.SECONDS);
     }
 
     //TODO: MAKE HANDLE USER REPLY
@@ -173,14 +172,19 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     private String mentionUser(String userFirstName, Long userId) {
-        return "[" + userFirstName + "](tg://user?id=" + userId.toString() + ")";
+        String escapedFirstName = escapeMarkdownV2(userFirstName);
+        return "[" + escapedFirstName + "](tg://user?id=" + userId.toString() + ")";
     }
 
     private String escapeMarkdownV2(String text) {
         if (text == null) {
             return "";
         }
-        return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
+        String[] specialChars = {"\\", ".", "_", "*", "[", "]", "(", ")", "~", ">", "#", "+", "-", "=", "|", "{", "}", "!"};
+        for (String specialChar : specialChars) {
+            text = text.replace(specialChar, "\\" + specialChar);
+        }
+        return text;
     }
 
     @SneakyThrows
@@ -202,8 +206,10 @@ public class BotMain extends TelegramLongPollingBot {
             System.out.println(userId + " " + messageText.toLowerCase());
             userService.saveUser(userId, messageText.toLowerCase());
             String text = "Супер, твой ник есть на платформе";
-            sendMessageService.sendMessage(chatId.toString(), threadId, text, "MarkdownV2");
+            int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text, "MarkdownV2");
+            scheduleMessageDeletion(chatId, sentMessage,10);
             System.out.println(text);
+
 
             CompletableFuture.runAsync(() -> {
 //                System.out.println("Удаление сообщения через 10 секунд...");

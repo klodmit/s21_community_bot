@@ -54,6 +54,26 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
         }
     }
 
+    @Async
+    @Override
+    public CompletableFuture<Integer> sendMessageAsync(String chatId, Integer threadId, String message){
+        try {
+
+            SendMessage sendMessage = SendMessage.builder()
+                    .chatId(chatId)
+                    .messageThreadId(threadId)
+                    .text(message)
+                    .parseMode("MarkdownV2")
+                    .build();
+
+            Integer messageId = botMain.execute(sendMessage).getMessageId();
+            return CompletableFuture.completedFuture(messageId);
+        } catch (TelegramApiException e) {
+            log.error("Error sending message asynchronously: {}", e.getMessage(), e);
+            return CompletableFuture.failedFuture(e);
+        }
+    }
+
     private String escapeMarkdownV2(String text) {
         if (text == null) {
             return "";
