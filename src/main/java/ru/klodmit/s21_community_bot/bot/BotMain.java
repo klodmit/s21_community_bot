@@ -85,8 +85,9 @@ public class BotMain extends TelegramLongPollingBot {
             deleteMessage(chatId.toString(), message.getMessageId());
 
             String mentionText = mentionUser(userFirstName, userId);
+            String text = escapeMarkdownV2(WELCOME_MESSAGE.formatted(mentionText));
             if (userService.findUserById(userId)){
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), WELCOME_MESSAGE.formatted(mentionText), "MarkdownV2")
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), text , "MarkdownV2")
                         .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
                             log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                             return null;
