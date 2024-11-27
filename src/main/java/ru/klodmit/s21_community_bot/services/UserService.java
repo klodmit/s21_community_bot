@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import ru.klodmit.s21_community_bot.model.User;
 import ru.klodmit.s21_community_bot.repos.UserRepository;
 
+import java.util.Optional;
+
 
 @Service
 public class UserService {
@@ -42,5 +44,10 @@ public class UserService {
         } else {
             return null; // или бросить исключение, если пользователь не найден
         }
+    }
+
+    public boolean findUserById(Long userId) {
+        Optional<User> user = userRepository.findById(userId);
+        return user.isPresent();
     }
 }

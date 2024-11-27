@@ -12,6 +12,8 @@ import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
+import static ru.klodmit.s21_community_bot.util.Constants.*;
+
 public class MuteCommand implements Command {
     private final TelegramLongPollingBot bot;
     private final SendMessageToThreadService sendMessageToThreadService;
@@ -32,46 +34,40 @@ public class MuteCommand implements Command {
         Long userId = update.getMessage().getFrom().getId();
         ChatMember userChatMember = getChatMembersService.getChatMember(chatId, userId);
         String status = userChatMember.getStatus();
-        String cause = "Спам";
         if (status.equals("administrator") || status.equals("creator")) {
             if (args == null || args.isEmpty()) {
                 int defaultDuration = 1440;
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
 
                 muteUser(chatId.toString(), targetUserId, defaultDuration);
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на 1 день, причина: " + cause, "MarkdownV2");
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), MUTE_MESSAGE_TEMPLATE.formatted("1", "день"), "MarkdownV2");
             } else {
                 String[] parts = args.split(" ");
                 if (parts.length == 1) {
                     String timeStr = parts[0];
                     String durationStr = "null";
-                    timeProcessing(update, timeStr, durationStr, chatId, cause);
+                    timeProcessing(update, timeStr, durationStr, chatId);
                 } else if (parts.length == 2) {
                     String timeStr = parts[0];
                     String durationStr = parts[1];
-                    timeProcessing(update, timeStr, durationStr, chatId, cause);
-                } else if (parts.length == 3) {
-                    String timeStr = parts[0];
-                    String durationStr = parts[1];
-                    cause = parts[2];
-                    timeProcessing(update, timeStr, durationStr, chatId, cause);
+                    timeProcessing(update, timeStr, durationStr, chatId);
                 }
             }
         } else {
             int defaultDuration = 1440;
             muteUser(chatId.toString(), userId, defaultDuration);
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Ты заглушил сам себя на день, молодец.", "MarkdownV2");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), JUST_DUMB, "MarkdownV2");
         }
     }
 
-    private void timeProcessing(Update update, String timeStr, String durationStr, Long chatId, String cause) {
+    private void timeProcessing(Update update, String timeStr, String durationStr, Long chatId) {
         int durationInMinutes = parseDuration(timeStr, durationStr);
         Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
         if (durationInMinutes < 0) {
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Неверный формат времени. Пример: /mute 5 часов спам", "MarkdownV2");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), MUTE_DEFAULT, "MarkdownV2");
         } else {
             muteUser(chatId.toString(), targetUserId, durationInMinutes);
-            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь заглушен на " + timeStr + " " + durationStr + ", причина: "+ cause, "MarkdownV2");
+            sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), MUTE_MESSAGE_TEMPLATE.formatted(timeStr,durationStr), "MarkdownV2");
         }
     }
 

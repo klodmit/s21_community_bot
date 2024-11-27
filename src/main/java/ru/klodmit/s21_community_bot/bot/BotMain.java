@@ -4,7 +4,6 @@ import jakarta.annotation.PostConstruct;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
-
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -19,7 +18,9 @@ import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl
 
 import java.util.concurrent.*;
 
-import static java.lang.Thread.sleep;
+import static ru.klodmit.s21_community_bot.util.Constants.DEFAULT_WELCOME_MESSAGE;
+import static ru.klodmit.s21_community_bot.util.Constants.WELCOME_MESSAGE;
+
 
 @Slf4j
 @Component
@@ -27,9 +28,8 @@ public class BotMain extends TelegramLongPollingBot {
     public static final String COMMAND_PREFIX = "/";
     //    System.getenv("BOT_NAME");
 //    System.getenv("BOT_TOKEN"); РАСКОММЕНТИРОВАТЬ КОГДА БУДЕШЬ ПУШИТЬ
-    private static final String BOT_USERNAME = "verification_school_account_bot";
-    private static final String BOT_TOKEN = "7001537895:AAFS8lJnIz8U1-WhOyf_BWW4htWA6XQnAOM";
-
+    private static final String BOT_USERNAME = System.getenv("BOT_NAME");;
+    private static final String BOT_TOKEN = System.getenv("BOT_TOKEN");
     private final SendMessageToThreadServiceImpl sendMessageService;
     private final CheckSchoolAccount checkSchoolAccount;
     private final CommandContainer commandContainer;
@@ -85,16 +85,20 @@ public class BotMain extends TelegramLongPollingBot {
             deleteMessage(chatId.toString(), message.getMessageId());
 
             String mentionText = mentionUser(userFirstName, userId);
-            String text = String.format(
-                    "Добро пожаловать, %s\nУ тебя есть 5 минут для того, чтобы указать свой школьный ник в топике [ID](https://t.me/c/1975595161/30147)",
-                    mentionText
-            );
+            if (userService.findUserById(userId)){
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), WELCOME_MESSAGE.formatted(mentionText), "MarkdownV2")
+                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
+                            log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
+                            return null;
+                        });
+            }else{
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText), "MarkdownV2")
+                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
+                            log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
+                            return null;
+                        });
+            }
 
-            sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), text, "MarkdownV2")
-                    .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId)).exceptionally(ex -> {
-                        log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
-                        return null;
-                    });
         } catch (Exception e) {
             log.error("Error in handleNewChatMember: {}", e.getMessage(), e);
         }
@@ -179,20 +183,16 @@ public class BotMain extends TelegramLongPollingBot {
         return text.replaceAll("([\\\\.\\-_\\*\\[\\]()~>`#\\+\\-=|{}!])", "\\\\$1");
     }
 
-
+    @SneakyThrows
     private CompletableFuture<Void> checkSchoolAccountAsync(String schoolProgram, String schoolStatus, Long userId, String messageText, Long chatId, Integer threadId) {
         return CompletableFuture.runAsync(() -> {
-            try {
-                // Проверка статуса школы
-                if ("ACTIVE".equals(schoolStatus) || "TEMPORARY_BLOCKING".equals(schoolStatus) || "FROZEN".equals(schoolStatus)) {
-                    handleActiveUser(schoolProgram, userId, messageText, chatId, threadId);
-                } else if ("EXPELLED".equals(schoolStatus) || "BLOCKED".equals(schoolStatus)) {
-                    handleBlockedUser(userId, chatId, threadId);
-                } else if ("NOT_FOUND".equals(schoolStatus)) {
-                    handleNotFoundUser(userId, chatId, threadId);
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            // Проверка статуса школы
+            if ("ACTIVE".equals(schoolStatus) || "TEMPORARY_BLOCKING".equals(schoolStatus) || "FROZEN".equals(schoolStatus)) {
+                handleActiveUser(schoolProgram, userId, messageText, chatId, threadId);
+            } else if ("EXPELLED".equals(schoolStatus) || "BLOCKED".equals(schoolStatus)) {
+                handleBlockedUser(userId, chatId, threadId);
+            } else if ("NOT_FOUND".equals(schoolStatus)) {
+                handleNotFoundUser(userId, chatId, threadId);
             }
         }, executorService); // Используем пул потоков для асинхронного выполнения
     }
@@ -202,6 +202,7 @@ public class BotMain extends TelegramLongPollingBot {
             System.out.println(userId + " " + messageText.toLowerCase());
             userService.saveUser(userId, messageText.toLowerCase());
             String text = "Супер, твой ник есть на платформе";
+            sendMessageService.sendMessage(chatId.toString(), threadId, text, "MarkdownV2");
             System.out.println(text);
 
             CompletableFuture.runAsync(() -> {
@@ -216,16 +217,19 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     private void handleBlockedUser(Long userId, Long chatId, Integer threadId) {
-        String text = "Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\n" +
-                "Если все\\-таки хочешь остаться в чате, напиши администрации";
+        String text = "Ты заблокирован на платформе, поэтому не можешь присоединиться к чату.\n" +
+                "Если все-таки хочешь остаться в чате, напиши администрации";
         CompletableFuture.runAsync(() -> {
             System.out.println("Удаление сообщения и бан пользователя через 10 секунд..." + text);
             // sendMessageAndBlock(userId, chatId, threadId, text);
         }, CompletableFuture.delayedExecutor(10, TimeUnit.SECONDS));
     }
 
+    @SneakyThrows
     private void handleNotFoundUser(Long userId, Long chatId, Integer threadId) {
-        String text = "Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
+        String text = "Мы не смогли найти твои данные на платформе.\nВведи корректные данные, иначе будешь заблокирован";
+        int sentId = sendMessageService.sendMessage(chatId.toString(), threadId, text, "MarkdownV2");
+        deleteMessage(chatId.toString(), sentId);
         System.out.println(text);
 
         CompletableFuture.runAsync(() -> {
@@ -238,8 +242,6 @@ public class BotMain extends TelegramLongPollingBot {
             // }
         }, CompletableFuture.delayedExecutor(30, TimeUnit.SECONDS));
     }
-
-
 
 
 }

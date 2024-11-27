@@ -4,9 +4,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 
+import static ru.klodmit.s21_community_bot.util.Constants.BANAN_MESSAGE;
+
 public class BananCommand implements Command{
     private final SendMessageToThreadService sendMessageToThreadService;
-    private final static String BANAN_MESSAGE = "Тут мог быть бан\nДержи банан 🍌";
+
 
     public BananCommand(SendMessageToThreadService sendMessageToThreadService) {
         this.sendMessageToThreadService = sendMessageToThreadService;
