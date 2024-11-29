@@ -36,11 +36,10 @@ public class SendMessageToThreadServiceImpl implements SendMessageToThreadServic
     @SneakyThrows
     @Override
     public Integer sendMessage(String chatId, Integer threadId, String message) {
-        String text = escapeMarkdownV2(message);
         SendMessage sendMessage = SendMessage.builder()
                 .chatId(chatId)
                 .messageThreadId(threadId)
-                .text(text)
+                .text(message)
                 .parseMode("MarkdownV2")
                 .build();
         return botMain.execute(sendMessage).getMessageId();

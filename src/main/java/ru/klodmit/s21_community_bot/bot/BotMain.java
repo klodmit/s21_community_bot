@@ -236,7 +236,7 @@ public class BotMain extends TelegramLongPollingBot {
     @SneakyThrows
     private void handleBlockedUser(Long userId, Long chatId, Integer threadId, String userFirstName) {
         String mentionText = mentionUser(userFirstName, userId);
-        String text = mentionText + " Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\n" +
+        String text = mentionText + " Ты заблокирован на платформе, поэтому не можешь присоединиться к чату.\n" +
                 "Если все-таки хочешь остаться в чате, напиши администрации";
         int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text);
         scheduleMessageDeletion(chatId, sentMessage, 10);
