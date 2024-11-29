@@ -124,7 +124,8 @@ public class BotMain extends TelegramLongPollingBot {
         checkSchoolAccountAsync(schoolProgram, schoolStatus, message.getFrom().getId(),
                 text, message.getChatId(),
                 message.getMessageThreadId(),
-                message.getFrom().getFirstName());
+                message.getFrom().getFirstName(),
+                message);
     }
 
     private void handleCommand(Update update) throws TelegramApiException {
@@ -201,7 +202,7 @@ public class BotMain extends TelegramLongPollingBot {
     @SneakyThrows
     private CompletableFuture<Void> checkSchoolAccountAsync(String schoolProgram, String schoolStatus,
                                                             Long userId, String messageText, Long chatId,
-                                                            Integer threadId, String userFirstName) {
+                                                            Integer threadId, String userFirstName, Message message) {
         return CompletableFuture.runAsync(() -> {
             // Проверка статуса школы
             if ("ACTIVE".equals(schoolStatus) || "TEMPORARY_BLOCKING".equals(schoolStatus) || "FROZEN".equals(schoolStatus)) {
@@ -209,7 +210,7 @@ public class BotMain extends TelegramLongPollingBot {
             } else if ("EXPELLED".equals(schoolStatus) || "BLOCKED".equals(schoolStatus)) {
                 handleBlockedUser(userId, chatId, threadId, userFirstName);
             } else if ("NOT_FOUND".equals(schoolStatus)) {
-                handleNotFoundUser(userId, chatId, threadId, userFirstName);
+                handleNotFoundUser(userId, chatId, threadId, userFirstName,message);
             }
         }, executorService); // Используем пул потоков для асинхронного выполнения
     }
@@ -244,11 +245,12 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    private void handleNotFoundUser(Long userId, Long chatId, Integer threadId, String userFirstName) {
+    private void handleNotFoundUser(Long userId, Long chatId, Integer threadId, String userFirstName, Message message) {
         String mentionText = mentionUser(userFirstName, userId);
         String text = mentionText + "Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
+        deleteMessage(chatId.toString(),message.getMessageId());
         int sentId = sendMessageService.sendMessage(chatId.toString(), threadId, text);
-        deleteMessage(chatId.toString(), sentId);
+        scheduleMessageDeletion(chatId, sentId, 10);
         System.out.println(text);
 
         CompletableFuture.runAsync(() -> {
