@@ -1,5 +1,6 @@
 package ru.klodmit.s21_community_bot.services;
 
+import lombok.SneakyThrows;
 import org.springframework.scheduling.annotation.Async;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
@@ -14,6 +15,10 @@ public interface SendMessageToThreadService {
      * @param message provided message to be sent.
      */
     Integer sendMessage(String chatId, Integer threadId, String message, String parseMode);
+
+    @SneakyThrows
+    Integer sendMessage(String chatId, Integer threadId, String message);
+
     CompletableFuture<Integer> sendMessageAsync(String chatId, Integer threadId, String message, String parseMode);
 
     @Async
