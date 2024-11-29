@@ -60,6 +60,7 @@ public class CheckSchoolAccount {
     public String getUserStatus(String username) {
         try {
             token = getAccessToken();
+            System.out.println(token);
             URL url = new URL("https://edu-api.21-school.ru/services/21-school/api/v1/participants/" + username + "@student.21-school.ru");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
@@ -91,7 +92,7 @@ public class CheckSchoolAccount {
     }
     public String getUserProgram(String username) {
         try {
-
+            System.out.println(token);
             URL url = new URL("https://edu-api.21-school.ru/services/21-school/api/v1/participants/" + username + "@student.21-school.ru");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
