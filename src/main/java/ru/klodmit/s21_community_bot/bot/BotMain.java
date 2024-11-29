@@ -20,7 +20,6 @@ import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl
 import java.util.concurrent.*;
 
 import static ru.klodmit.s21_community_bot.util.Constants.DEFAULT_WELCOME_MESSAGE;
-import static ru.klodmit.s21_community_bot.util.Constants.WELCOME_MESSAGE;
 
 
 @Slf4j
@@ -153,6 +152,11 @@ public class BotMain extends TelegramLongPollingBot {
         execute(new DeleteMessage(chatId, messageId));
     }
 
+    @SneakyThrows
+    private void banChatMember(String chatId, Long userId) {
+        execute(new BanChatMember(chatId, userId));
+    }
+
     private void scheduleMessageDeletion(Long chatId, Integer messageId, int seconds) {
         scheduler.schedule(() -> {
             CompletableFuture.runAsync(() -> {
@@ -161,6 +165,14 @@ public class BotMain extends TelegramLongPollingBot {
                 } catch (TelegramApiException e) {
                     throw new RuntimeException(e);
                 }
+            });
+        }, seconds, TimeUnit.SECONDS);
+    }
+
+    private void scheduleBanChatMember(Long chatId, Long userId, int seconds) {
+        scheduler.schedule(() -> {
+            CompletableFuture.runAsync(() -> {
+                banChatMember(chatId.toString(), userId);
             });
         }, seconds, TimeUnit.SECONDS);
     }
@@ -213,24 +225,22 @@ public class BotMain extends TelegramLongPollingBot {
             System.out.println(text);
         } else {
             String mentionText = mentionUser(userFirstName, userId);
-            String text = mentionText+" Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
+            String text = mentionText + " Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
             System.out.println(text);
-            int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId,text);
-            scheduleMessageDeletion(chatId, sentMessage,10);
-            BanChatMember banChatMember = new BanChatMember(chatId.toString(),userId);
-            execute(banChatMember);
+            int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text);
+            scheduleMessageDeletion(chatId, sentMessage, 10);
+            scheduleBanChatMember(chatId,userId,30);
         }
     }
 
     @SneakyThrows
     private void handleBlockedUser(Long userId, Long chatId, Integer threadId, String userFirstName) {
         String mentionText = mentionUser(userFirstName, userId);
-        String text = mentionText+" Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\n" +
+        String text = mentionText + " Ты заблокирован на платформе, поэтому не можешь присоединиться к чату\\.\n" +
                 "Если все-таки хочешь остаться в чате, напиши администрации";
-        int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId,text);
-        scheduleMessageDeletion(chatId, sentMessage,10);
-        BanChatMember banChatMember = new BanChatMember(chatId.toString(),userId);
-        execute(banChatMember);
+        int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text);
+        scheduleMessageDeletion(chatId, sentMessage, 10);
+        scheduleBanChatMember(chatId,userId,30);
     }
 
     @SneakyThrows
