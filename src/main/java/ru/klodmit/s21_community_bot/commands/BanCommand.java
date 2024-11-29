@@ -2,12 +2,12 @@ package ru.klodmit.s21_community_bot.commands;
 
 import lombok.SneakyThrows;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.groupadministration.BanChatMember;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.chatmember.ChatMember;
 import ru.klodmit.s21_community_bot.services.GetChatMembersService;
 import ru.klodmit.s21_community_bot.services.SendMessageToThreadService;
 
-//
 public class BanCommand implements Command{
     private final TelegramLongPollingBot bot;
     private final SendMessageToThreadService sendMessageToThreadService;
@@ -31,7 +31,9 @@ public class BanCommand implements Command{
         if (status.equals("administrator") || status.equals("creator")){
             if (args == null || args.isEmpty()){
                 Long targetUserId = update.getMessage().getReplyToMessage().getFrom().getId();
-                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь будет забанен", "MarkdownV2");
+                sendMessageToThreadService.sendMessage(chatId.toString(), update.getMessage().getMessageThreadId(), "Пользователь будет заблокирован", "MarkdownV2");
+                BanChatMember banChatMember = new BanChatMember(chatId.toString(),targetUserId);
+                bot.execute(banChatMember);
             }
         }
     }
