@@ -2,15 +2,15 @@ bot:
     token: systemEnvironment['BOT_TOKEN']
     username: systemEnvironment['BOT_NAME']
 school:
-    password: 9G3CR7XgNE!
-    username: rhaellaa@student.21-school.ru
+    password: systemEnvironment['SCHOOL_PASSWORD']
+    username: systemEnvironment['SCHOOL_USERNAME']
 server:
     port: 5555
 spring:
     datasource:
-        password: 9G3CR7XgNE
+        password: systemEnvironment['DB_PASSWORD']
         url: jdbc:postgresql://147.45.42.229:5432/CommunityDatabase
-        username: admin
+        username: systemEnvironment['DB_USER']
     jpa:
         hibernate:
             ddl-auto: update

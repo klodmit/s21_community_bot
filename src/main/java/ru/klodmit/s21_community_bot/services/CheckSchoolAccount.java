@@ -13,10 +13,8 @@ import java.net.URL;
 @Service
 public class CheckSchoolAccount {
 //TODO: REMAKE IT with @FeignClient
-    @Value("${school.username}")
-    private String username;
-    @Value("${school.password}")
-    private String password;
+    private String username = System.getenv("SCHOOL_USERNAME");
+    private String password = System.getenv("SCHOOL_PASSWORD");
 
     public String getAccessToken() {
         try {

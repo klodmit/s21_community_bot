@@ -11,9 +11,8 @@ import java.util.Random;
 @Service
 public class VerificationByRocketChat {
     @Value("${school.username}")
-    private String username;
-    @Value("${school.password}")
-    private String password;
+    private String username = System.getenv("SCHOOL_USERNAME");
+    private String password = System.getenv("ROCKET_CHAT_PASSWORD");
     private SendMessageByRocketChatService sendMessageByRocketChatService;
     private AuthRequestByRocketChatService authRequestByRocketChatService;
 

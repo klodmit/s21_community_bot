@@ -15,11 +15,13 @@ import ru.klodmit.s21_community_bot.commands.Command;
 import ru.klodmit.s21_community_bot.services.CheckSchoolAccount;
 import ru.klodmit.s21_community_bot.services.CommandContainer;
 import ru.klodmit.s21_community_bot.services.UserService;
+import ru.klodmit.s21_community_bot.services.WhiteListService;
 import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
 
 import java.util.concurrent.*;
 
 import static ru.klodmit.s21_community_bot.util.Constants.DEFAULT_WELCOME_MESSAGE;
+import static ru.klodmit.s21_community_bot.util.Constants.WELCOME_MESSAGE;
 
 
 @Slf4j
@@ -37,16 +39,18 @@ public class BotMain extends TelegramLongPollingBot {
 
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
+    private final WhiteListService whiteListService;
 
 
     public BotMain(
             CheckSchoolAccount checkSchoolAccount,
-            UserService userService) {
+            UserService userService, WhiteListService whiteListService) {
         super(BOT_TOKEN);
         this.sendMessageService = new SendMessageToThreadServiceImpl(this);
         this.checkSchoolAccount = checkSchoolAccount;
         this.commandContainer = new CommandContainer(sendMessageService, this);
         this.userService = userService;
+        this.whiteListService = whiteListService;
     }
 
     @PostConstruct
@@ -85,8 +89,8 @@ public class BotMain extends TelegramLongPollingBot {
             deleteMessage(chatId.toString(), message.getMessageId());
 
             String mentionText = mentionUser(userFirstName, userId);
-            if (userService.findUserById(userId)) {
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), "С возвращением, " + mentionText)
+            if (userService.findUserById(userId) || whiteListService.findByTgId(userId)) {
+                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), WELCOME_MESSAGE.formatted(mentionText))
                         .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId, 300)).exceptionally(ex -> {
                             log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                             return null;
@@ -183,7 +187,7 @@ public class BotMain extends TelegramLongPollingBot {
         return BOT_USERNAME;
     }
 
-    private String mentionUser(String userFirstName, Long userId) {
+    private @NotNull String mentionUser(String userFirstName, @NotNull Long userId) {
         String escapedFirstName = escapeMarkdownV2(userFirstName);
         return "[" + escapedFirstName + "](tg://user?id=" + userId.toString() + ")";
     }
@@ -247,7 +251,7 @@ public class BotMain extends TelegramLongPollingBot {
     @SneakyThrows
     private void handleNotFoundUser(Long userId, Long chatId, Integer threadId, String userFirstName, Message message) {
         String mentionText = mentionUser(userFirstName, userId);
-        String text = mentionText + "Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
+        String text = mentionText + " Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
         deleteMessage(chatId.toString(),message.getMessageId());
         int sentId = sendMessageService.sendMessage(chatId.toString(), threadId, text);
         scheduleMessageDeletion(chatId, sentId, 10);
