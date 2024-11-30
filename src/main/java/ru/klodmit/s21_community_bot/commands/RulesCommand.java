@@ -19,7 +19,7 @@ public class RulesCommand implements Command {
     @Override
     public void execute(Update update, String args) {
         if (args == null || args.isEmpty()) {
-            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), RULES_MESSAGE.formatted("[NOMETA](https://nometa.xyz/ru.html)"),"MarkdownV2");
+            sendMessageToThreadService.sendMessage(update.getMessage().getChatId().toString(), update.getMessage().getMessageThreadId(), RULES_MESSAGE.formatted("[NOMETA](https://nometa.xyz/ru.html)"));
         }
     }
 }
