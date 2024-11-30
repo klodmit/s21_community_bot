@@ -48,7 +48,7 @@ public class BotMain extends TelegramLongPollingBot {
         super(BOT_TOKEN);
         this.sendMessageService = new SendMessageToThreadServiceImpl(this);
         this.checkSchoolAccount = checkSchoolAccount;
-        this.commandContainer = new CommandContainer(sendMessageService, this);
+        this.commandContainer = new CommandContainer(sendMessageService, this, whiteListService);
         this.userService = userService;
         this.whiteListService = whiteListService;
     }

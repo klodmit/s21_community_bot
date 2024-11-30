@@ -15,27 +15,29 @@ import static ru.klodmit.s21_community_bot.commands.CommandName.*;
 @Service
 public class CommandContainer {
     private final ImmutableMap<String, Command> commandMap;
+    private final WhiteListService whiteListService;
 
 //    private final ImmutableMap<String, Function<Command, Boolean>> commandMapv2;
 
 
-    public CommandContainer(SendMessageToThreadService sendMessageToThreadService, TelegramLongPollingBot bot) {
+    public CommandContainer(SendMessageToThreadService sendMessageToThreadService, TelegramLongPollingBot bot, WhiteListService whiteListService) {
         GetChatMembersService getChatMembersService = new GetChatMembersServiceImpl(bot);
 
         commandMap = ImmutableMap.<String, Command>builder()
                 .put(FAQ.getCommandName(), new FaqCommand(sendMessageToThreadService))
                 .put(RULES.getCommandName(), new RulesCommand(sendMessageToThreadService))
                 .put(BANAN.getCommandName(), new BananCommand(sendMessageToThreadService))
-                .put(BAN.getCommandName(), new BanCommand(sendMessageToThreadService,getChatMembersService,bot))
+                .put(BAN.getCommandName(), new BanCommand(sendMessageToThreadService, getChatMembersService, bot))
 //                .put(FIND.getCommandName(), new FindCommand())
                 .put(ADMIN.getCommandName(), new AdminCommand(sendMessageToThreadService, getChatMembersService))
-                .put(MUTE.getCommandName(), new MuteCommand(sendMessageToThreadService,getChatMembersService,bot))
-                .put(SAVE.getCommandName(), new SaveCommand(sendMessageToThreadService,getChatMembersService,bot))
+                .put(MUTE.getCommandName(), new MuteCommand(sendMessageToThreadService, getChatMembersService, bot))
+                .put(SAVE.getCommandName(), new SaveCommand(sendMessageToThreadService, getChatMembersService, whiteListService))
 //                .put(VALIDATE.getCommandName(), new ValidateCommand(sendMessageToThreadService,getChatMembersService,bot,verificationByRocketChat))
-                .put(WARN.getCommandName(), new WarnCommand(sendMessageToThreadService,getChatMembersService))
+                .put(WARN.getCommandName(), new WarnCommand(sendMessageToThreadService, getChatMembersService))
                 .build();
-
+        this.whiteListService = whiteListService;
     }
+
     public Command retrieveCommand(String commandIdentifier) {
         return commandMap.get(commandIdentifier);
     }
