@@ -20,6 +20,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       BOT_NAME: ${BOT_NAME}
       BOT_TOKEN: ${BOT_TOKEN}
+      SCHOOL_USERNAME: ${SCHOOL_USERNAME}
+      SCHOOL_PASSWORD: ${SCHOOL_PASSWORD}
+      ROCKET_CHAT_PASSWORD: ${ROCKET_CHAT_PASSWORD}
     depends_on:
       - postgres-db
 
