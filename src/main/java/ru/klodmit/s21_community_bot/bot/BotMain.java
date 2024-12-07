@@ -102,7 +102,7 @@ public class BotMain extends TelegramLongPollingBot {
         }
     }
 
-    private void schedulePeriodicCheck(Update update, Long chatId, Long userId, int totalDelaySeconds) {
+    private void schedulePeriodicCheck(@NotNull Update update, Long chatId, Long userId, int totalDelaySeconds) {
         long startTime = System.currentTimeMillis();
         ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
             try {
@@ -122,7 +122,7 @@ public class BotMain extends TelegramLongPollingBot {
             } catch (Exception e) {
                 log.error("Error during periodic check for user {}: {}", userId, e.getMessage(), e);
             }
-        }, 0, 30, TimeUnit.SECONDS); // Периодическая проверка каждые 30 секунд
+        }, 0, 1, TimeUnit.SECONDS);
 
         scheduledTasks.put(userId, future);
     }
