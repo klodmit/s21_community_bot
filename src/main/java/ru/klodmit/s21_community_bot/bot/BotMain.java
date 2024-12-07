@@ -20,8 +20,7 @@ import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl
 
 import java.util.concurrent.*;
 
-import static ru.klodmit.s21_community_bot.util.Constants.DEFAULT_WELCOME_MESSAGE;
-import static ru.klodmit.s21_community_bot.util.Constants.WELCOME_MESSAGE;
+import static ru.klodmit.s21_community_bot.util.Constants.*;
 
 
 @Slf4j
@@ -64,7 +63,7 @@ public class BotMain extends TelegramLongPollingBot {
         if (update.hasMessage()) {
             Message message = update.getMessage();
             if (messageHasNewChatMembers(message)) {
-                handleNewChatMembersAsync(message);
+                handleNewChatMembersAsync(update, message);
             } else if (message.hasText()) {
                 handleMessage(update);
             }
@@ -75,16 +74,16 @@ public class BotMain extends TelegramLongPollingBot {
         return message.getNewChatMembers() != null && !message.getNewChatMembers().isEmpty();
     }
 
-    private void handleNewChatMembersAsync(Message message) {
+    private void handleNewChatMembersAsync(Update update, Message message) {
         Long chatId = message.getChatId();
 
-        message.getNewChatMembers().forEach(newUser -> CompletableFuture.runAsync(() -> handleNewChatMember(message, newUser.getId(), newUser.getFirstName(), chatId)).exceptionally(ex -> {
+        message.getNewChatMembers().forEach(newUser -> CompletableFuture.runAsync(() -> handleNewChatMember(update, message, newUser.getId(), newUser.getFirstName(), chatId)).exceptionally(ex -> {
             log.error("Error handling new chat member asynchronously: {}", ex.getMessage(), ex);
             return null;
         }));
     }
 
-    private void handleNewChatMember(Message message, Long userId, String userFirstName, Long chatId) {
+    private void handleNewChatMember(Update update, Message message, Long userId, String userFirstName, Long chatId) {
         try {
             deleteMessage(chatId.toString(), message.getMessageId());
 
@@ -101,6 +100,9 @@ public class BotMain extends TelegramLongPollingBot {
                             log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
                             return null;
                         });
+                if (!hasSendMessageToTopic(update, userId)) {
+                    scheduleBanChatMember(chatId, userId, 300);
+                }
             }
 
         } catch (Exception e) {
@@ -111,8 +113,7 @@ public class BotMain extends TelegramLongPollingBot {
     private void handleMessage(Update update) throws TelegramApiException {
         Message message = update.getMessage();
         String text = message.getText().trim();
-
-        if (isThreadMessage(message) && (message.getMessageThreadId() == 3 || message.getMessageThreadId() == 30147)) {
+        if (isThreadMessage(message) && THREAD_ID.contains(message.getMessageThreadId())) {
             handleThreadMessage(update);
         } else if (text.startsWith(COMMAND_PREFIX)) {
             handleCommand(update);
@@ -125,7 +126,7 @@ public class BotMain extends TelegramLongPollingBot {
         String text = message.getText().trim().toLowerCase();
         String schoolStatus = checkSchoolAccount.getUserStatus(text);
         String schoolProgram = checkSchoolAccount.getUserProgram(text);
-        checkSchoolAccountAsync(schoolProgram, schoolStatus, message.getFrom().getId(),
+        checkSchoolAccountAsync(update, schoolProgram, schoolStatus, message.getFrom().getId(),
                 text, message.getChatId(),
                 message.getMessageThreadId(),
                 message.getFrom().getFirstName(),
@@ -176,9 +177,7 @@ public class BotMain extends TelegramLongPollingBot {
 
     private void scheduleBanChatMember(Long chatId, Long userId, int seconds) {
         scheduler.schedule(() -> {
-            CompletableFuture.runAsync(() -> {
-                banChatMember(chatId.toString(), userId);
-            });
+            CompletableFuture.runAsync(() -> banChatMember(chatId.toString(), userId));
         }, seconds, TimeUnit.SECONDS);
     }
 
@@ -204,7 +203,7 @@ public class BotMain extends TelegramLongPollingBot {
     }
 
     @SneakyThrows
-    private CompletableFuture<Void> checkSchoolAccountAsync(String schoolProgram, String schoolStatus,
+    private CompletableFuture<Void> checkSchoolAccountAsync(Update update, String schoolProgram, String schoolStatus,
                                                             Long userId, String messageText, Long chatId,
                                                             Integer threadId, String userFirstName, Message message) {
         return CompletableFuture.runAsync(() -> {
@@ -214,7 +213,7 @@ public class BotMain extends TelegramLongPollingBot {
             } else if ("EXPELLED".equals(schoolStatus) || "BLOCKED".equals(schoolStatus)) {
                 handleBlockedUser(userId, chatId, threadId, userFirstName);
             } else if ("NOT_FOUND".equals(schoolStatus)) {
-                handleNotFoundUser(userId, chatId, threadId, userFirstName,message);
+                handleNotFoundUser(update, userId, chatId, threadId, userFirstName, message);
             }
         }, executorService); // Используем пул потоков для асинхронного выполнения
     }
@@ -224,48 +223,51 @@ public class BotMain extends TelegramLongPollingBot {
         if ("Core program".equals(schoolProgram)) {
             System.out.println(userId + " " + messageText.toLowerCase());
             userService.saveUser(userId, messageText.toLowerCase());
-            String text = "Супер, твой ник есть на платформе";
+            String text = VERIFICATION_SUCCESSFUL;
             int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text, "MarkdownV2");
             scheduleMessageDeletion(chatId, sentMessage, 10);
             System.out.println(text);
         } else {
             String mentionText = mentionUser(userFirstName, userId);
-            String text = mentionText + " Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
+            String text = mentionText + INTENSIVE_MESSAGE;
             System.out.println(text);
             int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text);
             scheduleMessageDeletion(chatId, sentMessage, 10);
-            scheduleBanChatMember(chatId,userId,30);
+            scheduleBanChatMember(chatId, userId, 30);
         }
     }
 
     @SneakyThrows
     private void handleBlockedUser(Long userId, Long chatId, Integer threadId, String userFirstName) {
         String mentionText = mentionUser(userFirstName, userId);
-        String text = mentionText + " Ты заблокирован на платформе, поэтому не можешь присоединиться к чату.\n" +
-                "Если все-таки хочешь остаться в чате, напиши администрации";
+        String text = mentionText + BLOCKING_MESSAGE;
         int sentMessage = sendMessageService.sendMessage(chatId.toString(), threadId, text);
         scheduleMessageDeletion(chatId, sentMessage, 10);
-        scheduleBanChatMember(chatId,userId,30);
+        scheduleBanChatMember(chatId, userId, 30);
     }
 
     @SneakyThrows
-    private void handleNotFoundUser(Long userId, Long chatId, Integer threadId, String userFirstName, Message message) {
+    private void handleNotFoundUser(Update update, Long userId, Long chatId, Integer threadId, String userFirstName, Message message) {
         String mentionText = mentionUser(userFirstName, userId);
-        String text = mentionText + " Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
-        deleteMessage(chatId.toString(),message.getMessageId());
-        int sentId = sendMessageService.sendMessage(chatId.toString(), threadId, text);
-        scheduleMessageDeletion(chatId, sentId, 10);
+        String text = mentionText + NOT_FOUND;
+        deleteMessage(chatId.toString(), message.getMessageId());
+        final int[] sentId = {sendMessageService.sendMessage(chatId.toString(), threadId, text)};
+        scheduleMessageDeletion(chatId, sentId[0], 10);
         System.out.println(text);
 
         CompletableFuture.runAsync(() -> {
             System.out.println("Проверка и бан пользователя через 30 секунд...");
-            // if (hasSendMessageToTopic(userId)) {
-            //     deleteMessage(chatId, sentMessageId);
-            // } else {
-            //     banChatMember(chatId, userId);
-            //     deleteMessage(chatId, sentMessageId);
-            // }
+            if (hasSendMessageToTopic(update, userId)) {
+                sentId[0] = sendMessageService.sendMessage(chatId.toString(), threadId, VERIFICATION_SUCCESSFUL);
+                scheduleMessageDeletion(chatId, sentId[0], 10);
+            } else {
+                scheduleBanChatMember(chatId, userId, 30);
+            }
         }, CompletableFuture.delayedExecutor(30, TimeUnit.SECONDS));
+    }
+
+    private boolean hasSendMessageToTopic(Update update, long userId) {
+        return THREAD_ID.contains(update.getMessage().getMessageThreadId()) && update.getMessage().getFrom().getId().equals(userId);
     }
 
 

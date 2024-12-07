@@ -1,5 +1,7 @@
 package ru.klodmit.s21_community_bot.util;
 
+import java.util.List;
+
 public final class Constants {
     public static final String RULES_MESSAGE = """
             Правила общения в московском чате Школы 21
@@ -55,4 +57,9 @@ public final class Constants {
     public final static String FAQ_MESSAGE = "https://telegra.ph/School-21-Core-Camp-FAQ-11-05";
     public final static String DEFAULT_WELCOME_MESSAGE = "Добро пожаловать, %s\nУ тебя есть 5 минут для того, чтобы указать свой школьный ник в топике [ID](https://t.me/c/1975595161/30147)";
     public final static String WELCOME_MESSAGE = "С возвращением, %s";
+    public final static String NOT_FOUND = "  Мы не смогли найти твои данные на платформе\\.\nВведи корректные данные, иначе будешь заблокирован";
+    public final static String BLOCKING_MESSAGE = " Ты заблокирован на платформе, поэтому не можешь присоединиться к чату.\nЕсли все-таки хочешь остаться в чате, напиши администрации";
+    public final static String INTENSIVE_MESSAGE = " Ты с интенсива и пока не являешься участником основного обучения, заходи как поступишь";
+    public final static String VERIFICATION_SUCCESSFUL = "Супер, твой ник есть на платформе";
+    public final static List<Integer> THREAD_ID = List.of(30147, 3);
 }

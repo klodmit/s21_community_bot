@@ -37,4 +37,4 @@ ENV ROCKET_CHAT_PASSWORD=${ROCKET_CHAT_PASSWORD}
 ENV JAVA_OPTS="-Xms256m -Xmx512m"
 
 # Запуск приложения
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dspring.datasource.url=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME -Dspring.datasource.username=$DB_USER -Dspring.datasource.password=$DB_PASSWORD -Dbot.token=$BOT_TOKEN -Dbot.username=$BOT_NAME -jar /app/telegram-bot.jar"]
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dspring.datasource.url=jdbc:postgresql://$DB_HOST:$DB_PORT/$DB_NAME -Dspring.datasource.username=$DB_USER -Dspring.datasource.password=$DB_PASSWORD -Dbot.token=$BOT_TOKEN -Dbot.username=$BOT_NAME -Dschool.password=$SCHOOL_PASSWORD -Dschool.username=$SCHOOL_USERNAME -jar /app/telegram-bot.jar"]
