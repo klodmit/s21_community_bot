@@ -18,6 +18,7 @@ import ru.klodmit.s21_community_bot.services.UserService;
 import ru.klodmit.s21_community_bot.services.WhiteListService;
 import ru.klodmit.s21_community_bot.services.impl.SendMessageToThreadServiceImpl;
 
+import java.util.Map;
 import java.util.concurrent.*;
 
 import static ru.klodmit.s21_community_bot.util.Constants.*;
@@ -27,8 +28,6 @@ import static ru.klodmit.s21_community_bot.util.Constants.*;
 @Component
 public class BotMain extends TelegramLongPollingBot {
     public static final String COMMAND_PREFIX = "/";
-    //    System.getenv("BOT_NAME");
-//    System.getenv("BOT_TOKEN"); РАСКОММЕНТИРОВАТЬ КОГДА БУДЕШЬ ПУШИТЬ
     private static final String BOT_USERNAME = System.getenv("BOT_NAME");
     private static final String BOT_TOKEN = System.getenv("BOT_TOKEN");
     private final SendMessageToThreadServiceImpl sendMessageService;
@@ -36,10 +35,10 @@ public class BotMain extends TelegramLongPollingBot {
     private final CommandContainer commandContainer;
     private final UserService userService;
 
+    private final Map<Long, ScheduledFuture<?>> scheduledTasks = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
     private final ExecutorService executorService = Executors.newFixedThreadPool(100);
     private final WhiteListService whiteListService;
-
 
     public BotMain(
             CheckSchoolAccount checkSchoolAccount,
@@ -88,27 +87,54 @@ public class BotMain extends TelegramLongPollingBot {
             deleteMessage(chatId.toString(), message.getMessageId());
 
             String mentionText = mentionUser(userFirstName, userId);
+
             if (userService.findUserById(userId) || whiteListService.findByTgId(userId)) {
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), WELCOME_MESSAGE.formatted(mentionText))
-                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId, 300)).exceptionally(ex -> {
-                            log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
-                            return null;
-                        });
+                int sentId = sendMessageService.sendMessage(chatId.toString(), message.getMessageThreadId(), WELCOME_MESSAGE.formatted(mentionText));
+                scheduleMessageDeletion(chatId,sentId,30);
             } else {
-                sendMessageService.sendMessageAsync(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText))
-                        .thenAccept(sendMessageId -> scheduleMessageDeletion(chatId, sendMessageId, 300)).exceptionally(ex -> {
-                            log.error("Error sending welcome message asynchronously: {}", ex.getMessage(), ex);
-                            return null;
-                        });
-                if (!hasSendMessageToTopic(update, userId)) {
-                    scheduleBanChatMember(chatId, userId, 300);
-                }
+                int sentId = sendMessageService.sendMessage(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText));
+                schedulePeriodicCheck(update,chatId, userId, 5 * 60);
+                scheduleMessageDeletion(chatId,sentId,300);
             }
 
         } catch (Exception e) {
             log.error("Error in handleNewChatMember: {}", e.getMessage(), e);
         }
     }
+
+    private void schedulePeriodicCheck(Update update, Long chatId, Long userId, int totalDelaySeconds) {
+        long startTime = System.currentTimeMillis();
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(() -> {
+            try {
+                // Проверяем, отправил ли пользователь сообщение
+                if (hasSendMessageToTopic(update, userId)) {
+                    cancelScheduledTask(userId);
+                    log.info("User {} sent a message in the topic, ban canceled", userId);
+                    return;
+                }
+
+                // Если прошло 5 минут, баним пользователя
+                if (System.currentTimeMillis() - startTime >= totalDelaySeconds * 1000L) {
+                    banChatMember(chatId.toString(), userId);
+                    cancelScheduledTask(userId);
+                    log.info("User {} was banned after 5 minutes in chat {}", userId, chatId);
+                }
+            } catch (Exception e) {
+                log.error("Error during periodic check for user {}: {}", userId, e.getMessage(), e);
+            }
+        }, 0, 30, TimeUnit.SECONDS); // Периодическая проверка каждые 30 секунд
+
+        scheduledTasks.put(userId, future);
+    }
+
+    private void cancelScheduledTask(Long userId) {
+        ScheduledFuture<?> future = scheduledTasks.remove(userId);
+        if (future != null) {
+            future.cancel(true);
+            log.info("Scheduled task for user {} was canceled", userId);
+        }
+    }
+
 
     private void handleMessage(Update update) throws TelegramApiException {
         Message message = update.getMessage();
