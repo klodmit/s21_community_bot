@@ -93,7 +93,7 @@ public class BotMain extends TelegramLongPollingBot {
                 scheduleMessageDeletion(chatId,sentId,30);
             } else {
                 int sentId = sendMessageService.sendMessage(chatId.toString(), message.getMessageThreadId(), DEFAULT_WELCOME_MESSAGE.formatted(mentionText));
-                schedulePeriodicCheck(update,chatId, userId, 5 * 60);
+//                schedulePeriodicCheck(update,chatId, userId, 5 * 60);
                 scheduleMessageDeletion(chatId,sentId,300);
             }
 
@@ -283,12 +283,12 @@ public class BotMain extends TelegramLongPollingBot {
 
         CompletableFuture.runAsync(() -> {
             System.out.println("Проверка и бан пользователя через 30 секунд...");
-            if (hasSendMessageToTopic(update, userId)) {
-                sentId[0] = sendMessageService.sendMessage(chatId.toString(), threadId, VERIFICATION_SUCCESSFUL);
-                scheduleMessageDeletion(chatId, sentId[0], 10);
-            } else {
-                scheduleBanChatMember(chatId, userId, 30);
-            }
+//            if (hasSendMessageToTopic(update, userId)) {
+//                sentId[0] = sendMessageService.sendMessage(chatId.toString(), threadId, VERIFICATION_SUCCESSFUL);
+//                scheduleMessageDeletion(chatId, sentId[0], 10);
+//            } else {
+//                scheduleBanChatMember(chatId, userId, 30);
+//            }
         }, CompletableFuture.delayedExecutor(30, TimeUnit.SECONDS));
     }
 

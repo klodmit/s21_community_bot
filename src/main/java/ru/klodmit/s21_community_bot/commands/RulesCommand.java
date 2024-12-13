@@ -9,7 +9,7 @@ import static ru.klodmit.s21_community_bot.util.Constants.RULES_MESSAGE;
 
 public class RulesCommand implements Command {
     private final SendMessageToThreadService sendMessageToThreadService;
-
+    //TODO Завести константы под ссылки
 
     public RulesCommand(SendMessageToThreadService sendMessageToThreadService) {
         this.sendMessageToThreadService = sendMessageToThreadService;
